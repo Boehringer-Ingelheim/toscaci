@@ -1,0 +1,15 @@
+{  
+  "agent": {
+    "hostname": "http://localhost:8080"
+  },
+  "testSuite": {
+    "parameters":{
+      "URL":"http://elotrolado.net"
+      
+    },
+    "selectors": {
+      "TestType":"acceptance"      
+    },
+    "reports":["ToscaIntegrationReport"]
+  }  
+}

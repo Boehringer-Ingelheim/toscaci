@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DA62C854-03EF-4583-AC37-B7C7C2C27147}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>CIService</RootNamespace>
+    <AssemblyName>CIService</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>publish\</PublishUrl>
+    <ManifestCertificateThumbprint>455E90CFC603FE7A255FEF84565BDAC10A3DBDE5</ManifestCertificateThumbprint>
+    <ManifestKeyFile>CIService_TemporaryKey.pfx</ManifestKeyFile>
+    <GenerateManifests>true</GenerateManifests>
+    <SignManifests>false</SignManifests>
+    <Version>0.0.0.0</Version>
+    <InformationalVersion>0.0.0-dev~commithash</InformationalVersion>
+    <VersionFileName>$(BaseIntermediateOutputPath)Version.cs</VersionFileName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>2</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
+    <WriteLinesToFile File="$(VersionFileName)" Overwrite="True" Lines="&#xD;&#xA;using System.Reflection%3b&#xD;&#xA;using System.Runtime.InteropServices%3b&#xD;&#xA;[assembly: AssemblyTitle(&quot;CIService&quot;)]&#xD;&#xA;[assembly: AssemblyDescription(&quot;Tricentis Tosca Continuous Integration Service&quot;)]&#xD;&#xA;[assembly: AssemblyCompany(&quot;Github&quot;)]&#xD;&#xA;[assembly: AssemblyProduct(&quot;ToscaCIService&quot;)]&#xD;&#xA;[assembly: ComVisible(false)]&#xD;&#xA;[assembly: AssemblyCopyright(&quot;Copyright ©  2021&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyVersion(&quot;$(Version)&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyFileVersion(&quot;$(Version)&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyInformationalVersion(&quot;$(InformationalVersion)&quot;)]" />
+    <ItemGroup>
+      <Compile Include="$(VersionFileName)" />
+    </ItemGroup>
+  </Target>
+  <ItemGroup>
+    <Reference Include="Base">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Base.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.11.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Persistency, Version=14.0.0.262, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Persistency.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.5.2.0\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Http, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.5.2.0\lib\net45\System.Web.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http.SelfHost, Version=5.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.SelfHost.5.2.0\lib\net45\System.Web.Http.SelfHost.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TCAPI">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\TCAPI.dll</HintPath>
+    </Reference>
+    <Reference Include="TCAPIObjects">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\TCAPIObjects.dll</HintPath>
+    </Reference>
+    <Reference Include="Tricentis.AutomationObjects">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Tricentis.AutomationObjects.dll</HintPath>
+    </Reference>
+    <Reference Include="Tricentis.Common">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Tricentis.Common.dll</HintPath>
+    </Reference>
+
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AutomationObjectsSerializer.cs" />
+    <Compile Include="Contract\CreateWorkspaceResponse.cs" />
+    <Compile Include="Contract\ExecutionTracking.cs" />
+    <Compile Include="Contract\FileInfo.cs" />
+    <Compile Include="Contract\KeyValue.cs" />
+    <Compile Include="Enum\DBType.cs" />
+    <Compile Include="Contract\CreateProject.cs" />
+    <Compile Include="Contract\ExecutionRequest.cs" />
+    <Compile Include="Contract\ExecutionResponse.cs" />
+    <Compile Include="Enum\EnumHelper.cs" />
+    <Compile Include="Enum\ExecutionStatus.cs" />
+    <Compile Include="Contract\ProjectInformation.cs" />
+    <Compile Include="Controllers\ExecutionController.cs" />
+    <Compile Include="Controllers\ExecutionListController.cs" />
+    <Compile Include="Controllers\WorkspaceController.cs" />
+    <Compile Include="Enum\ToscaPermissionType.cs" />
+    <Compile Include="Enum\WorkspaceCreationType.cs" />
+    <Compile Include="Helper\AuthHelper.cs" />
+    <Compile Include="Helper\ExecutionHelper.cs" />
+    <Compile Include="LockedImageJsonConverter.cs" />
+    <Compile Include="MyHttpsSelfHostConfiguration.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Service\ExecutionTrackerService.cs" />
+    <Compile Include="Service\TCAPIService.cs" />
+    <Compile Include="Service\WorkspaceService.cs" />
+    <Compile Include="Tosca\WorkspaceSession.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="CIService_TemporaryKey.pfx" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.8 %28x86 y x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

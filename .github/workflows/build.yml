@@ -1,0 +1,231 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+    branches:
+      - master
+  release:
+    types: 
+      - prereleased
+      - released
+
+jobs:
+  precheck:
+    runs-on: [ubuntu-20.04]
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      version_number: ${{ steps.get_version.outputs.version_number }}
+      full_version: ${{ steps.get_version.outputs.full_version }}
+      branchTag: ${{ steps.get_version.outputs.branchTag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Validate Release
+        if: github.event_name == 'release' || github.event_name == 'prerelease'
+        run: |
+          TAG_NAME=${GITHUB_REF/refs\/tags\//}
+          VERSION_FILE=$(cat VERSION)
+          if [ "$TAG_NAME" != "$VERSION_FILE" ]; then
+            echo "tag $TAG_NAME not equals to VERSION file $VERSION_FILE"
+            exit 1
+          fi  
+      - name: Get Versions
+        id: get_version     
+        run: |
+           VERSION_FILE=$(cat VERSION)
+           echo ::set-output name=branchTag::$(echo $GITHUB_REF | cut -d / -f 3)
+           if [[ "$VERSION_FILE" =~ ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$ ]] ; then
+                VERSION=${VERSION_FILE}.${{ github.run_number }}
+                VERSION_NUMBER=$(echo  "${VERSION_FILE}" | cut -d "v" -f 2).${{ github.run_number }}
+                SHORT_COMMIT=$(git rev-parse --short=4 HEAD)
+                FULL_VERSION="${VERSION}_${SHORT_COMMIT}"
+                echo ::set-output name=full_version::${FULL_VERSION}
+                echo ::set-output name=version::${VERSION}  
+                echo ::set-output name=version_number::${VERSION_NUMBER}     
+           else
+                echo "VERSION file doesn't have valid version format: ^v([0-9]+)\.([0-9]+)(\.([0-9]+))?(\.([0-9]+))?$"
+                exit 1
+           fi       
+
+  e2e_test: 
+    runs-on: [windows-2019]
+    needs: [precheck,build_toscactl,build_tosca_server]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1   
+      - name: Cache Tosca Setup
+        uses: actions/cache@v2
+        with:
+          path: tosca-installer
+          key: tosca-setup-${{steps.cache-key.outputs.result}}
+      - uses: actions/download-artifact@v2
+        name: Download toscactl
+        with:
+          name: toscactl-windows-amd64_${{ needs.precheck.outputs.full_version }}
+          path: cli
+      - uses: actions/download-artifact@v2
+        name: Download toscaci-service
+        with:
+          name: toscaci-service-windows-amd64_${{ needs.precheck.outputs.full_version }}
+          path: toscaci-service
+      - uses: actions/download-artifact@v2
+        name: Download toscacommander-addon
+        with:
+          name: toscacommander-addon-windows-amd64_${{ needs.precheck.outputs.full_version }}
+          path: toscacommander-addon
+      - name: E2E Testing
+        env:
+          TRICENTIS_LICENSING_HOME: C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\Licensing
+          TBOX_HOME: C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox
+          TRICENTIS_HOME: C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\Classic
+          TRICENTIS_ALLUSERS_APPDATA: C:\ProgramData\TRICENTIS\Tosca Testsuite\7.0.0
+          COMMANDER_HOME: C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander
+        run: |                   
+          netsh advfirewall set allprofiles state off   
+          if(![System.IO.Directory]::Exists("tosca-installer")){
+              Invoke-WebRequest "${{ secrets.TRICENTIS_13_1P9_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
+              expand-archive .\tosca-installer.zip              
+              Remove-Item tosca-installer.zip
+          }           
+          echo "Installing Tosca..."
+          Start-Process '.\tosca-installer\Tricentis Tosca 13.1 Patch9.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
+
+          echo "Install License"
+          Start-Process "$Env:TRICENTIS_LICENSING_HOME\ToscaLicenseConfiguration.exe" -Wait -NoNewWindow -ArgumentList 'connect-cloud -u ${{secrets.TRICENTIS_LICENSE_USER}} -p ${{secrets.TRICENTIS_LICENSE_PASSWORD}}'
+          
+          echo "Install Tosca Commander Addon"
+          cp ".\toscacommander-addon\*"  "$Env:COMMANDER_HOME\"
+          Start-Process '.\toscaci-service\CIService.exe'
+          sleep 2
+          
+          echo "Run toscactl"
+          cd e2e            
+          ..\cli\toscactl-windows-amd64.exe run acceptance
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: 'e2e/build/test/acceptance/*-junit.xml'
+          fail_on_failure: true
+          require_tests: true
+      - name: 'Archive E2E results'
+        uses: actions/upload-artifact@v2
+        with:
+          name: e2e-results_${{ needs.precheck.outputs.full_version }}
+          path: e2e/build/test/
+
+          
+  build_toscactl:
+    runs-on: [ubuntu-20.04]
+    needs: [precheck]
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: [amd64]
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1        
+      - name: Setup GO
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16' # The Go version to download (if necessary) and use.
+      - name: Build
+        working-directory: client
+        run: make build_${{ matrix.goos }} VERSION=${{ needs.precheck.outputs.version }} COMMIT=$(git rev-parse HEAD)
+      - name: 'Archive debug toscactl'
+        uses: actions/upload-artifact@v2
+        with:
+          name: toscactl-${{ matrix.goos }}-${{ matrix.goarch }}_${{ needs.precheck.outputs.full_version }}
+          path: client/build/toscactl-${{ matrix.goos }}-amd64*
+      - name: Release Asset Upload toscactl
+        uses: svenstaro/upload-release-action@v1-release
+        if: github.event_name == 'release' || github.event_name == 'prerelease'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: client/build/*
+          tag: ${{ needs.precheck.outputs.branchTag }}
+          overwrite: true
+          file_glob: true
+
+  build_tosca_server:
+    runs-on: [windows-2019]
+    needs: [precheck]
+    strategy:
+      matrix:
+        goos: [windows]
+        goarch: [amd64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - uses: actions/github-script@v4
+        id: cache-key
+        env:
+          KEY: ${{ secrets.TRICENTIS_13_1P9_URL }}
+        with:
+          script: |
+              const { KEY } = process.env
+              return require('crypto').createHash('md5').update(KEY).digest("hex");
+      - name: Cache Tosca Setup
+        uses: actions/cache@v2
+        with:
+          path: tosca-installer
+          key: tosca-setup-${{steps.cache-key.outputs.result}}
+      - name: Setup Tosca
+        run: |                      
+           if(![System.IO.Directory]::Exists("tosca-installer")){
+              Invoke-WebRequest "${{ secrets.TRICENTIS_13_1P9_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
+              expand-archive .\tosca-installer.zip              
+              Remove-Item tosca-installer.zip
+           }           
+           Start-Process '.\tosca-installer\Tricentis Tosca 13.1 Patch9.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
+      - name: Build
+        working-directory: server
+        shell: cmd
+        run: |
+           nuget restore
+           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
+      - name: Package
+        working-directory: server
+        run: |
+           mkdir build
+           Compress-Archive -Path CIAddin\bin\Release\* -DestinationPath build\toscacommander-addon-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+           Compress-Archive -Path CIService\bin\Release\* -DestinationPath build\toscaci-service-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+      - name: 'Archive Debug Tosca Commander Addon'
+        uses: actions/upload-artifact@v2
+        with:
+          name: toscacommander-addon-${{ matrix.goos }}-${{ matrix.goarch }}_${{ needs.precheck.outputs.full_version }}
+          path: server/CIAddin/bin/Release/
+
+      - name: 'Archive Debug ToscaCI service'
+        uses: actions/upload-artifact@v2
+        with:
+          name: toscaci-service-${{ matrix.goos }}-${{ matrix.goarch }}_${{ needs.precheck.outputs.full_version }}
+          path: server/CIService/bin/Release/
+
+      - name: Release Asset Upload Tosca Commander Addon
+        uses: svenstaro/upload-release-action@v1-release
+        if: github.event_name == 'release' || github.event_name == 'prerelease'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: server/build/toscacommander-addon-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          tag: ${{ needs.precheck.outputs.branchTag }}
+          overwrite: true
+          file_glob: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release Asset Upload ToscaCI Service
+        uses: svenstaro/upload-release-action@v1-release
+        if: github.event_name == 'release' || github.event_name == 'prerelease'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: server/build/toscaci-service-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+          tag: ${{ needs.precheck.outputs.branchTag }}
+          overwrite: true
+          file_glob: true

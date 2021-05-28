@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{3418709B-B17A-4587-A228-D5E4FBF01AEA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CIAddin</RootNamespace>
+    <AssemblyName>CIAddin</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <Version>0.0.0.0</Version>
+    <InformationalVersion>0.0.0-dev~commithash</InformationalVersion>
+    <VersionFileName>$(BaseIntermediateOutputPath)Version.cs</VersionFileName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>C:\Program Files %28x86%29\TRICENTIS\Tosca Testsuite\ToscaCommander\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AutoMapper">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\AutoMapper.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Base">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Base.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BusinessObjects">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\BusinessObjects.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Persistency">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Persistency.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TBoxAddIn">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\TBoxAddIn.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TCAPI">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\TCAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TCAPIObjects">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\TCAPIObjects.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.Automation.Agent">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Tricentis.Automation.Agent.exe</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.Automation.Api.AddIn">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Tricentis.Automation.Api.AddIn.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.AutomationBase">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Tricentis.AutomationBase.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.AutomationObjects">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Tricentis.AutomationObjects.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.Common">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\TBox\Tricentis.Common.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.Common.MiscHelper">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Tricentis.Common.MiscHelper.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.Data">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Tricentis.Data.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Tricentis.ExecutionResults.ServiceConnection">
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\Tricentis.ExecutionResults.ServiceConnection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="XDefinitions, Version=13.1.0.29938, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander\XDefinitions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AutomationObjectsSerializer.cs" />
+    <Compile Include="CiCdTaskAddin.cs" />
+    <Compile Include="ExecutionResultMapper2.cs" />
+    <Compile Include="LockedImageJsonConverter.cs" />
+    <Compile Include="Tasks\ImportAutomationObjectResultsToExecutionLogTask.cs" />
+    <Compile Include="Tasks\ImportFullProjectSubsetTask.cs" />
+    <Compile Include="ImportSubsetWithoutFolderStrategy2.cs" />
+    <Compile Include="Tasks\AddLdapGroupTask.cs" />
+    <Compile Include="TCProjectTaskInterceptor.cs" />
+  </ItemGroup>
+  <ItemGroup />
+    <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
+    <WriteLinesToFile
+        File="$(VersionFileName)"
+        Overwrite="True"
+        Lines="
+using System.Reflection%3b
+using System.Runtime.InteropServices%3b
+using Tricentis.TCCore.Persistency.AddInManager%3b
+
+[assembly: AssemblyTitle(&quot;CITosacaAddon&quot;)]
+[assembly: AssemblyDescription(&quot;Github Continuous Integration Service Addon&quot;)]
+[assembly: AssemblyCompany(&quot;Github&quot;)]
+[assembly: AssemblyProduct(&quot;ToscaCIService&quot;)]
+[assembly: ComVisible(false)]
+[assembly: AssemblyCopyright(&quot;Copyright ©  2021&quot;)]
+[assembly: TCAddIn.TCAddInTypeAttribute(typeof(CIAddin.ToscaCommanderCIAddin))]
+[assembly: System.Reflection.AssemblyVersion(&quot;$(Version)&quot;)]
+[assembly: System.Reflection.AssemblyFileVersion(&quot;$(Version)&quot;)]
+[assembly: System.Reflection.AssemblyInformationalVersion(&quot;$(InformationalVersion)&quot;)]" />
+    <ItemGroup>
+        <Compile Include="$(VersionFileName)" />
+    </ItemGroup>
+</Target>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
