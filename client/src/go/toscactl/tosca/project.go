@@ -37,6 +37,14 @@ func (t *Provider) DeleteWorkspace(workspaceSessionID string ,ctx context.Contex
 }
 
 func (t *Provider) CreateProject(createProjectRequest ProjectCreateRequest,ctx context.Context) (*Workspace,error) {
+	provisionerURL,err:=t.getOrchestratorURL(APIworkspace)
+	if err!=nil{
+		return nil,err
+	}
+	return t.createProject(createProjectRequest, provisionerURL,ctx)
+}
+
+func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,provisionerURL string,ctx context.Context) (*Workspace,error) {
 	if err:=checkProjectRequest(createProjectRequest);err!=nil{
 		return nil,err
 	}
@@ -71,11 +79,8 @@ func (t *Provider) CreateProject(createProjectRequest ProjectCreateRequest,ctx c
 		}
 	}
 	writer.Close()
-	url,err:=t.getOrchestratorURL(APIworkspace)
-	if err!=nil{
-		return nil,err
-	}
-	r, err := http.NewRequest("POST",url , body)
+
+	r, err := http.NewRequest("POST",provisionerURL , body)
 	if err!=nil{
 		return nil,err
 	}
