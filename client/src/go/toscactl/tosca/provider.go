@@ -64,7 +64,15 @@ func NewProvider(config *entity.ApplicationConfig) (*Provider, error) {
 }
 
 func (t *Provider)  getOrchestratorURL(URLpath string) (string,error){
-	u, err := url.Parse(t.config.OrchestratorURL)
+	return getAPIURL(t.config.OrchestratorURL,URLpath)
+}
+
+func (t *Provider)  getAgentURL(config *TestExecutorConfiguration,URLpath string) (string,error){
+	return getAPIURL(config.hostname,URLpath)
+}
+
+func getAPIURL(HostURL string,URLpath string) (string,error){
+	u, err := url.Parse(HostURL)
 	if err!=nil{
 		return "",err
 	}

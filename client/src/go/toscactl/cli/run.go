@@ -65,7 +65,7 @@ var (
 				}
 
 				if err=toscaProvider.RunTestSuite(*testSuiteConfig,cmd.Context());err!=nil{
-					log.Errorf("Error when executing Test:%s error: %v", testSuiteName,err)
+					log.Errorf("Error when executing TestSuite:%s, error: %v", testSuiteName,err)
 					os.Exit(2)
 				}
 			}

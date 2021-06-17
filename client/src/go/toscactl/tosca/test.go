@@ -230,11 +230,8 @@ func (t *Provider) waitUntilCompletion(ctx context.Context, executorSuiteConfig 
 			return context.Canceled
 		case <-time.After(15 * time.Second):
 			status, err := t.checkStatus(executorSuiteConfig, ctx)
-			if err != nil {
-				log.Errorf("%v", err)
-			} else {
-				log.Infof("Execution %s is in %s state", executorSuiteConfig.executionID, status)
-			}
+			log.Infof("Execution %s is in %s state", executorSuiteConfig.executionID, status)
+
 			switch status {
 			case executionCompleted:
 				return nil
@@ -253,7 +250,7 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if err!=nil{
 		return err
 	}
-	executionURL,err:=t.getOrchestratorURL(APIExecution)
+	executionURL,err:=t.getAgentURL(testExecutorConfig,APIExecution)
 	if err!=nil{
 		return err
 	}
@@ -301,7 +298,7 @@ func (t *Provider) getReports(testExecutorConfig *TestExecutorConfiguration,ctx 
 	return t.getToscaFiles(testExecutorConfig,APIExecutionReportList,APIExecutionReport,testExecutorConfig.reportsPath,ctx)
 }
 func (t *Provider) getXUnit(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) error {
-	xunitURL,err:=t.getOrchestratorURL(fmt.Sprintf(APIExecutionXUnit,testExecutorConfig.executionID))
+	xunitURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(APIExecutionXUnit,testExecutorConfig.executionID))
 	if err!=nil{
 		return err
 	}
@@ -311,7 +308,7 @@ func (t *Provider) getXUnit(testExecutorConfig *TestExecutorConfiguration,ctx co
 	return nil
 }
 func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,urlBase string,urldownload string,outputPath string,ctx context.Context) error {
-	reportListURL,err:=t.getOrchestratorURL(fmt.Sprintf(urlBase,testExecutorConfig.executionID))
+	reportListURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urlBase,testExecutorConfig.executionID))
 	if err!=nil{
 		return err
 	}
@@ -337,7 +334,7 @@ func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,u
 	log.Infof("%d files found",len(executionResponse.Files))
 	for _,file := range executionResponse.Files {
 		log.Infof("Downloading %s",file.Path)
-		downloadURL,err:=t.getOrchestratorURL(fmt.Sprintf(urldownload,testExecutorConfig.executionID,file.Id))
+		downloadURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urldownload,testExecutorConfig.executionID,file.Id))
 		if err!=nil{
 			return err
 		}
@@ -375,7 +372,7 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 }
 
 func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Context) (ExecutionStatus,error) {
-	executionStatusURL,err:=t.getOrchestratorURL(fmt.Sprintf(APIExecutionStatus,config.executionID))
+	executionStatusURL,err:=t.getAgentURL(config,fmt.Sprintf(APIExecutionStatus,config.executionID))
 	if err!=nil{
 		return "",err
 	}
@@ -406,7 +403,7 @@ func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Con
 		return "",err
 	}
 	if executionResponse.Error !=""{
-		return "",fmt.Errorf(executionResponse.Error)
+		return executionFailed,fmt.Errorf(executionResponse.Error)
 	}
 
 	return executionResponse.Status,nil

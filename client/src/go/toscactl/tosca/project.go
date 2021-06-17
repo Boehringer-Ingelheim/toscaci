@@ -37,14 +37,14 @@ func (t *Provider) DeleteWorkspace(workspaceSessionID string ,ctx context.Contex
 }
 
 func (t *Provider) CreateProject(createProjectRequest ProjectCreateRequest,ctx context.Context) (*Workspace,error) {
-	provisionerURL,err:=t.getOrchestratorURL(APIworkspace)
+	return t.createProject(createProjectRequest, t.config.OrchestratorURL,ctx)
+}
+
+func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,hostURL string,ctx context.Context) (*Workspace,error) {
+	provisionerURL,err:=getAPIURL(hostURL,APIworkspace)
 	if err!=nil{
 		return nil,err
 	}
-	return t.createProject(createProjectRequest, provisionerURL,ctx)
-}
-
-func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,provisionerURL string,ctx context.Context) (*Workspace,error) {
 	if err:=checkProjectRequest(createProjectRequest);err!=nil{
 		return nil,err
 	}
@@ -98,9 +98,9 @@ func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,provi
 	if err != nil {
 		return nil, err
 	}
-	if response.StatusCode == http.StatusInternalServerError {
+	if response.StatusCode != http.StatusOK {
 		bodyString := string(bodyBytes)
-		return nil, fmt.Errorf("unknown Error when creating project: %s", bodyString)
+		return nil, fmt.Errorf("unknown Error %d (%s) when creating project: %s", response.StatusCode,response.Status,bodyString)
 	}
 
 	projectCreateResponse := &ProjectCreateResponse{}
