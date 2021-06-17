@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"toscactl/entity"
 
 )
@@ -17,7 +18,7 @@ import (
 var (
 	cfgFile string
 	Verbose bool
-	appConfig *entity.ApplicationConfig
+	appConfig = &entity.ApplicationConfig{}
 	RootCmd = &cobra.Command{
 		Use:   "toscactl",
 		Long: `This application Allow you to manage Tosca remotely`,
@@ -49,7 +50,7 @@ func initConfig() {
 		log.Fatal(err)
 	}
 
-	viper.SetConfigName("tosca") // name of config file (without extension)
+	viper.SetConfigName("config") // name of config file (without extension)
 	if cfgFile != "" {                         // enable ability to specify config file via flag
 		log.Debug("cfgFile: ", cfgFile)
 		viper.SetConfigFile(cfgFile)
@@ -60,10 +61,15 @@ func initConfig() {
 	}
 
 	viper.AddConfigPath(dir)
-	viper.AddConfigPath(".")
-	viper.AddConfigPath("$HOME")
+	if runtime.GOOS != "windows" {
+		viper.AddConfigPath("/etc/tosca")
+	}else{
+		viper.AddConfigPath("C:\\Program Files\\Tricentis\\Tosca\\")
+	}
+	viper.AddConfigPath("$HOME/.tosca")
 	viper.AutomaticEnv() // read in environment variables that match
 	viper.SetEnvPrefix("tosca")
+	viper.AddConfigPath(".")
 	viper.BindPFlags(RootCmd.PersistentFlags())
 
 
@@ -71,6 +77,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		log.Infof("Using config file: %s", viper.ConfigFileUsed())
 	}
+	appConfig.Initialize()
 	if err:=viper.Unmarshal(&appConfig); err!=nil{
 		log.Errorf("Error when unmarshalling configuration %v",err)
 		os.Exit(1)

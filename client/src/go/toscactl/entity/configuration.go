@@ -18,6 +18,10 @@ type ApplicationConfig struct {
 	TestTimeout     time.Duration
 }
 
+func (a *ApplicationConfig) Initialize() {
+	a.TestTimeout = 30*time.Minute
+}
+
 
 func (i *StringArray) String() string {
 	return ""
