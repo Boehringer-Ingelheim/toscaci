@@ -361,13 +361,13 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 		templateType = CreateFromDatabase
 	}
 	rndNumber := rand.Intn(1000 - 1) + 1
-	workspace,err :=t.CreateProject(ProjectCreateRequest{
+	workspace,err :=t.createProject(ProjectCreateRequest{
 		SourcePath:               testSuiteConfig.Project.SourcePath,
 		Name:                     fmt.Sprintf("%s%d",testSuiteConfig.Name,rndNumber),
 		TemplateType:             templateType,
 		TemplateConnectionString: testSuiteConfig.Project.SourceConnectionStringDB,
 		DBType:                   LocalDB,
-	},ctx)
+	},testSuiteConfig.Agent.Hostname,ctx)
 	if err!=nil {
 		return nil,err
 	}
