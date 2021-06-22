@@ -57,6 +57,8 @@ namespace CIService.Helper
 
             foreach(String executionListId in executionListIDs)
             {
+
+                TestSuiteExecution testSuiteExecution = new TestSuiteExecution();
                 try {
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
@@ -84,6 +86,7 @@ namespace CIService.Helper
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);
                     string debug = Debug(AgentProcess);
                     AgentProcess.WaitForExit();
+                    AgentProcess.exit
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.ImportingResults);

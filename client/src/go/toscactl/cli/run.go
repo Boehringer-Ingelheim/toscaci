@@ -9,7 +9,14 @@ import (
 	"toscactl/entity"
 	"toscactl/tosca"
 )
+const(
 
+	success=0
+	configIssue=1
+	failedTests=2
+	unknownError=3
+
+)
 var (
 	reportsFlag            entity.StringArray
 	testSuiteSelectorsFlag = entity.KeyValue{}
@@ -28,7 +35,7 @@ var (
 			}
 			if len(testSuites) == 0 {
 				log.Error("at least one test suite is mandatory, use -t [testName]")
-				os.Exit(1)
+				os.Exit(configIssue)
 			}
 
 			toscaProvider,err := tosca.NewProvider(appConfig)
@@ -61,16 +68,20 @@ var (
 
 				if err=testSuiteConfig.Validate();err!=nil{
 					log.Fatalf("Wrong configuration on %s: %v", testSuiteName,err)
-					os.Exit(1)
+					os.Exit(configIssue)
 				}
 
 				if err=toscaProvider.RunTestSuite(*testSuiteConfig,cmd.Context());err!=nil{
-					log.Errorf("Error when executing TestSuite:%s, error: %v", testSuiteName,err)
-					os.Exit(2)
+					if err==tosca.TestsFailed {
+						os.Exit(failedTests)
+					}else{
+						log.Errorf("Error when executing TestSuite:%s, error: %v", testSuiteName,err)
+						os.Exit(unknownError)
+					}
 				}
 			}
 
-			os.Exit(0)
+			os.Exit(success)
 		},
 	}
 )

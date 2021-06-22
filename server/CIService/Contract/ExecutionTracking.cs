@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
+using System.Collections.Generic;
 
 namespace CIService.Contract
 {
@@ -15,9 +16,12 @@ namespace CIService.Contract
 
         public string reportPath { get; set; }
 
+        public string xunitPath { get; set; }
+
+        public string workspaceID { get; set; }
         public string workspaceDirectory { get; set; }
-        public string aOFilePath { get; internal set; }
-        public string aOResultFilePath { get; internal set; }
+
+        public List<TestSuiteExecution> executions  { get; set; }
 
         public string artifactsDirectory { get; set; }
 
@@ -32,6 +36,7 @@ namespace CIService.Contract
         {
             this.id = id;
             this.request = request;
+            this.workspaceID = request.sessionID;
         }
     }
 }

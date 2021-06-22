@@ -14,7 +14,10 @@ import (
 	"path/filepath"
 )
 
-const APIworkspace = "workspace"
+const (
+	APICreateWorkspace = "workspace"
+	APIworkspace = "workspace/%s"
+)
 
 
 type ProjectCreateRequest struct {
@@ -32,7 +35,27 @@ type ProjectCreateResponse struct {
 	Project Workspace
 }
 
-func (t *Provider) DeleteWorkspace(workspaceSessionID string ,ctx context.Context) error {
+func (t *Provider) DeleteWorkspace(testExecutorConfig *TestExecutorConfiguration ,ctx context.Context) error {
+	deleteWorkspaceURL, err := t.getAgentURL(testExecutorConfig, fmt.Sprintf(APIworkspace, testExecutorConfig.workspace.SessionID))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, "DELETE", deleteWorkspaceURL, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("error: %d (%s) when deleting workspace %s",response.StatusCode,response.Status,testExecutorConfig.workspace.SessionID)
+	}
+
 	return nil
 }
 
@@ -41,7 +64,7 @@ func (t *Provider) CreateProject(createProjectRequest ProjectCreateRequest,ctx c
 }
 
 func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,hostURL string,ctx context.Context) (*Workspace,error) {
-	provisionerURL,err:=getAPIURL(hostURL,APIworkspace)
+	provisionerURL,err:=getAPIURL(hostURL, APICreateWorkspace)
 	if err!=nil{
 		return nil,err
 	}
@@ -80,16 +103,16 @@ func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,hostU
 	}
 	writer.Close()
 
-	r, err := http.NewRequest("POST",provisionerURL , body)
+	req, err := http.NewRequestWithContext(ctx,"POST",provisionerURL , body)
 	if err!=nil{
 		return nil,err
 	}
 	if t.config.Username!="" && t.config.Password !=""{
-		r.SetBasicAuth(t.config.Username,t.config.Password)
+		req.SetBasicAuth(t.config.Username,t.config.Password)
 	}
-	r.Header.Add("Content-Type", writer.FormDataContentType())
+	req.Header.Add("Content-Type", writer.FormDataContentType())
 	client := &http.Client{}
-	response,err:=client.Do(r.WithContext(ctx))
+	response,err:=client.Do(req)
 	if err!=nil{
 		return nil,err
 	}

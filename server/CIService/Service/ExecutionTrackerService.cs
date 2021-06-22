@@ -24,6 +24,21 @@ namespace CIService.Service
             }
         }
 
+        public static List<ExecutionTracking> HaveExecutionRunning(String workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {
+                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.workspaceID.Equals(workspaceID)).ToList();
+            }
+        }
+
+        public static List<ExecutionTracking> GetExecutionsByWorkspace(String workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {
+                return executionTracker.Where(t => t.workspaceID.Equals(workspaceID)).ToList();
+            }
+        }
         public static ExecutionTracking CreateExecutionTracking(ExecutionRequest request)
         {
             ExecutionTracking executionTracking = null;

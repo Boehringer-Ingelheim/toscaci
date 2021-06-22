@@ -14,6 +14,11 @@ namespace CIService.Service
 {
     class WorkspaceService
     {
+        public static void DeleteWorkspace(String workspaceID)
+        {
+            String ProjectPath = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(workspaceID));
+            Directory.Delete(ProjectPath, true);
+        }
         public static ProjectInformation CreateProject(CreateProject createProject)
         {
             ProjectInformation projectInfo = new ProjectInformation(createProject);            
