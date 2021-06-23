@@ -19,8 +19,21 @@ namespace CIService.Controllers
     [RoutePrefix("api/v2/execution/{id}")]
     public class ExecutionController : ApiController
     {
-        private const string JUNIT_FILE_SEARCH_PATTERN = "junit_result*xml";
-        private const string EXECUTION_ARTIFACTS_DOWNLOAD_NAME = "executionArtifacts.zip";
+        [HttpDelete]
+        [Route("")]
+        public HttpResponseMessage CancelExecution(string id)
+        {
+            var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
+            if (executionTrack == null)
+            {
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
+            }
+            executionTrack.Cancel();
+            return new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK                
+            };
+        }
 
         [HttpGet]
         [Route("")]
@@ -29,7 +42,7 @@ namespace CIService.Controllers
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack==null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
             return CreateResponseMessage(HttpStatusCode.OK, executionTrack);
         }
@@ -37,12 +50,12 @@ namespace CIService.Controllers
 
         [HttpGet]
         [Route("xunit")]
-        public HttpResponseMessage GetXunit(string id)
+        public HttpResponseMessage GetXunitList(string id)
         {
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
 
             if (executionTrack.status != ExecutionStatus.Completed)
@@ -50,21 +63,34 @@ namespace CIService.Controllers
                 return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" is in {executionTrack.status}, can not extract xunit");
             }
 
+            string[] xunitList = Directory.GetFiles(executionTrack.xunitPath);
+            return CreateResponseMessage(HttpStatusCode.OK, executionTrack.xunitPath, xunitList);
+        }
 
-            // last check: just see if the junit file is there and return it
-            string junitFile = Directory.GetFiles(executionTrack.executionDirectory, JUNIT_FILE_SEARCH_PATTERN).FirstOrDefault();
-            if (junitFile == null)
+        [HttpGet]
+        [Route("xunit/{xunitID}")]
+        public HttpResponseMessage GetXunit(string id, string xunitID)
+        {
+            var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
+            if (executionTrack == null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, "The Junit file has not been found on the machine.");
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
 
+            if (executionTrack.status != ExecutionStatus.Completed)
+            {
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" is in {executionTrack.status}, can not extract xunit");
+            }
+
+            string xunitFilePath = Path.Combine(executionTrack.xunitPath, Encoding.UTF8.GetString(Convert.FromBase64String(xunitID)));
+            var fileInfo = new System.IO.FileInfo(xunitFilePath);
+            FileStream filestream = fileInfo.OpenRead();
             HttpResponseMessage responseMsg = new HttpResponseMessage(HttpStatusCode.OK);
-            var stream = new FileStream(junitFile, FileMode.Open);
-            responseMsg.Content = new StreamContent(stream);
+            responseMsg.Content = new StreamContent(filestream);
             responseMsg.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
-            responseMsg.Content.Headers.ContentDisposition.FileName = Path.GetFileName(junitFile);
-            responseMsg.Content.Headers.ContentType = new MediaTypeHeaderValue("text/xml");
-            responseMsg.Content.Headers.ContentLength = stream.Length;            
+            responseMsg.Content.Headers.ContentDisposition.FileName = Path.GetFileName(xunitFilePath);
+            responseMsg.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            responseMsg.Content.Headers.ContentLength = filestream.Length;
             return responseMsg;
         }
 
@@ -159,8 +185,6 @@ namespace CIService.Controllers
             responseMsg.Content.Headers.ContentLength = filestream.Length;
             return responseMsg;
         }
-
-
         private HttpResponseMessage CreateResponseMessage(HttpStatusCode statusCode, ExecutionTracking executionTracking)
         {
             ExecutionResponse response = new ExecutionResponse();

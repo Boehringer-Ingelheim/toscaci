@@ -20,10 +20,25 @@ namespace CIService.Service
         {
             lock (executionTrackerLockObject)
             {
-                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed).ToList();
+                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.status != ExecutionStatus.Canceled).ToList();
             }
         }
 
+        public static List<ExecutionTracking> HaveExecutionRunning(String workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {
+                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.status != ExecutionStatus.Canceled && t.workspaceID.Equals(workspaceID)).ToList();
+            }
+        }
+
+        public static List<ExecutionTracking> GetExecutionsByWorkspace(String workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {
+                return executionTracker.Where(t => t.workspaceID.Equals(workspaceID)).ToList();
+            }
+        }
         public static ExecutionTracking CreateExecutionTracking(ExecutionRequest request)
         {
             ExecutionTracking executionTracking = null;
@@ -52,13 +67,21 @@ namespace CIService.Service
             });
         }
 
-        internal static void FailExecutionTrackingStatus(string id, Exception ex)
+        public static void FailExecutionTrackingStatus(string id, Exception ex)
         {
             SetExecutionTracking(id, t =>
             {
                 t.status = ExecutionStatus.Failed;
                 t.error = ex;
             });
+        }
+
+        public static void CleanExecutionsByWorkspace(string workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {                
+                executionTracker.RemoveAll(t => t.workspaceID.Equals(workspaceID));
+            }
         }
     }
 }

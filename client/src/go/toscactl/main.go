@@ -10,15 +10,22 @@ import (
 )
 
 func main() {
-	ctx, stop :=signal.NotifyContext(context.Background(),os.Interrupt)
+	signalchan := make (chan os.Signal)
+	signal.Notify(signalchan)
+	ctx, stop :=context.WithCancel(context.Background())
 	defer stop()
 	go func() {
 		select {
-		case <-ctx.Done():
+		case <-signalchan:
 			log.Info("Program interruption detected... closing...")
 			stop()
 		}
 	}()
-
+/*
+	go func(){
+		time.Sleep(12 * time.Second)
+		stop()
+	}()
+*/
 	cli.Execute(ctx)
 }

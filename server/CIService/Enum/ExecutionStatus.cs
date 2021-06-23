@@ -14,6 +14,7 @@ namespace CIService.Enum
         WaitingToImportResults = 4,
         GeneratingReports = 5,        
         Completed = 6,
-        Failed = 7        
+        Failed = 7,
+        Canceled = 8           
     }
 }

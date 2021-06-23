@@ -19,9 +19,9 @@ func DownloadFile(url string , targetFilePath string,ctx context.Context) error 
 		return err
 	}
 	defer out.Close()
-	r, err := http.NewRequestWithContext(ctx,"GET",url,nil)
+	req, err := http.NewRequestWithContext(ctx,"GET",url,nil)
 	client := &http.Client{}
-	resp,err:=client.Do(r)
+	resp,err:=client.Do(req)
 	if err!=nil{
 		return err
 	}

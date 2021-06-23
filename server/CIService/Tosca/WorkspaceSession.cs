@@ -58,18 +58,7 @@ namespace CIService.Tosca
             List<TCObject> executionLists = workspace.GetProject().Search($"=>SUBPARTS:ExecutionList[{searchFilter}]");
             return executionLists;
             
-        }
-
-        public string GetAutomationObjectFromExecutionList(String workingDirectory, string executionListId)
-        {   
-            ExecutionList executionList = workspace.GetTCObject(executionListId) as ExecutionList;
-            //List<Tricentis.TCAPIObjects.Objects.TCObject> executionLists = session.GetWorkspace().GetProject().Search($"=>SUBPARTS:ExecutionList[(UniqueId==\"{executionListId}\")]");
-            //var executionList = (ExecutionList)executionLists[0];
-            string AOFileName = Path.Combine(workingDirectory, executionList.DisplayedName + ".tas");            
-            //executionList.WriteAutomationObjects(AOFileName, "false", "false");
-            executionList.WriteAutomationObjects(AOFileName);
-            return AOFileName;            
-        }
+        }   
 
         public void Dispose()
         {

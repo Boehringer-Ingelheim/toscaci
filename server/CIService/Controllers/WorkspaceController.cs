@@ -4,7 +4,9 @@ using CIService.Service;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -85,7 +87,33 @@ namespace CIService.Controllers
                 Directory.Delete(tempPath,true);
             }
         }
-        
+
+        [HttpDelete]
+        //[RequestSizeLimit(10L * 1024L * 1024L * 1024L)]
+        //[RequestFormLimits(MultipartBodyLengthLimit = 10L * 1024L * 1024L * 1024L)]
+        //[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+        [Route("{workspaceID}")]
+        public HttpResponseMessage DeleteWorkspace(string workspaceID)
+        {
+            List<ExecutionTracking> runningExecution = ExecutionTrackerService.HaveExecutionRunning(workspaceID);
+            if (runningExecution.Count() > 0)
+            {
+                return CreateErrorResponseMessage("Can not be deleted because running executions", HttpStatusCode.Conflict);
+            }
+            try { 
+                WorkspaceService.DeleteWorkspace(workspaceID);
+                ExecutionTrackerService.CleanExecutionsByWorkspace(workspaceID);
+                return new HttpResponseMessage()
+                {
+                    StatusCode = HttpStatusCode.OK
+                };
+            }
+            catch(Exception ex)
+            {
+                return CreateErrorResponseMessage(ex.Message, HttpStatusCode.InternalServerError);
+            }            
+        }
+
         private HttpResponseMessage CreateResponseMessage(ProjectInformation project, HttpStatusCode statusCode)
         {
             CreateWorkspaceResponse response = new CreateWorkspaceResponse();

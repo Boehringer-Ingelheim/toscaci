@@ -16,11 +16,13 @@ import (
 	"time"
 	"toscactl/entity"
 	"toscactl/helper"
+	"toscactl/test"
 )
 const(
-    APIExecution = "execution"
-    APIExecutionStatus = "execution/%s"
-	APIExecutionXUnit = "execution/%s/xunit"
+    APICreateExecution    = "execution"
+    APIExecution          = "execution/%s"
+	APIExecutionXUnitList = "execution/%s/xunit"
+	APIExecutionXUnit = "execution/%s/xunit/%s"
 	APIExecutionReportList = "execution/%s/report"
 	APIExecutionReport = "execution/%s/report/%s"
 	APIExecutionArtifactList = "execution/%s/artifact"
@@ -40,9 +42,12 @@ const(
 	executionGeneratingReports      ExecutionStatus = "GeneratingReports"
 	executionCompleted              ExecutionStatus = "Completed"
 	executionFailed                 ExecutionStatus = "Failed"
+	executionCanceled               ExecutionStatus = "Canceled"
+
 )
 
 var AlreadyRunningExecution = errors.New("already Running Execution on the node")
+var TestsFailed = errors.New("some tests has been failed")
 type ExecutionStatus string
 type KeyValue struct {
 	Key string
@@ -95,7 +100,7 @@ func (c *TestExecutorConfiguration) load(config TestSuiteConfiguration) {
 }
 
 // LoadTestSuiteConfiguration expect a testSuiteName file with format tosca-{testSuiteName}.json on workingDir
-// parses the file and return TestSuiteConfiguration or Error
+// parses the file and return TestSuiteConfiguration or TestCaseError
 func LoadTestSuiteConfiguration(testSuitePath string,name string) (testSuite *TestSuiteConfiguration,err error)  {
 	testSuite = &TestSuiteConfiguration{
 		Name:         name,
@@ -143,7 +148,7 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	}
 	executorSuiteConfig:= &TestExecutorConfiguration{
 		buildDirectory: buildDirPath,
-		xUnitPath:      path.Join(buildDirPath, fmt.Sprintf("%s-junit.xml", suiteConfig.Name)),
+		xUnitPath:      path.Join(buildDirPath,"junit"),
 		artifactsPath:  path.Join(buildDirPath,"Artifacts"),
 		reportsPath:    path.Join(buildDirPath,"Reports"),
 	}
@@ -155,10 +160,14 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		}
 		//TODO set hostname
 		executorSuiteConfig.hostname=agentController.hostname
-		defer t.destroyAgentNode(agentController,timeoutContext)
+		defer func(){
+			if err2:=t.destroyAgentNode(agentController);err2!=nil{
+				err=fmt.Errorf("error when destroying tosca agent: please remove it by hand, %v",err2)
+			}
+		}()
 		//TODO get hostname and VM Controller
 	}else{
-		executorSuiteConfig.hostname=suiteConfig.Agent.Hostname
+ 		executorSuiteConfig.hostname=suiteConfig.Agent.Hostname
 	}
 	log.Infof("Selected Node %s",suiteConfig.Agent.Hostname)
 	log.Infof("Preparing Workspace...")
@@ -172,7 +181,12 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	if err!=nil{
 		return err
 	}
-	defer t.DeleteWorkspace(executorSuiteConfig.workspace.SessionID,timeoutContext)
+	defer func(){
+		log.Infof("Deleting Workspace")
+		if err2:=t.DeleteWorkspace(executorSuiteConfig,context.Background());err2!=nil{
+			err=fmt.Errorf("error when deleting workspace: please remove it by hand, %v",err2)
+		}
+	}()
 	log.Infof("Workspace %s ready", executorSuiteConfig.workspace.SessionID)
 
 	log.Infof("Requesting Test %s on workspace %s",suiteConfig.Name,executorSuiteConfig.workspace.SessionID)
@@ -185,24 +199,29 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		return err
 	}
 
-	log.Infof("Test %s completed, downloading xunit results",suiteConfig.Name)
-	if err := t.getXUnit(executorSuiteConfig,timeoutContext);err != nil {
-		return err
-	}
-
-	log.Infof("downloading Reports")
-	err = t.getReports(executorSuiteConfig,timeoutContext)
-	if err != nil {
-		return err
-	}
-	log.Infof("downloading artifacts")
-	err = t.getArtifacts(executorSuiteConfig,timeoutContext)
+	log.Infof("Test %s completed",suiteConfig.Name)
+	log.Infof("Downloading xunit results")
+	testReports,err := t.getTestReports(executorSuiteConfig,timeoutContext)
 	if err != nil {
 		return err
 	}
 
-	//TODO Check if test fails
-	log.Infof("Test Suite %s completed,results saved on %s",suiteConfig.Name,executorSuiteConfig.buildDirectory)
+	log.Infof("Downloading Reports")
+	_,err = t.getReports(executorSuiteConfig,timeoutContext)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Downloading artifacts")
+	_,err = t.getArtifacts(executorSuiteConfig,timeoutContext)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("Test Suite %s %d test failed, %d tests executed, results saved on %s",suiteConfig.Name,testReports.GetNumberFailedTests(),testReports.GetNumberTests(),executorSuiteConfig.buildDirectory)
+	if testReports.GetNumberFailedTests() > 0 {
+		return TestsFailed
+	}
 	return nil
 }
 
@@ -210,7 +229,7 @@ func (t *Provider) requestTestExecution(executorSuiteConfig *TestExecutorConfigu
 	err := retry.Do(func() error {
 		return t.triggerExecution(executorSuiteConfig, timeoutContext)
 	}, retry.RetryIf(func(err error) bool {
-		if err == AlreadyRunningExecution {
+		if errors.Is(err,AlreadyRunningExecution) {
 			log.Warn("other execution still running, waiting for agent being free")
 			return true
 		}
@@ -226,7 +245,10 @@ func (t *Provider) waitUntilCompletion(ctx context.Context, executorSuiteConfig 
 	for {
 		select {
 		case <-ctx.Done():
-			t.cancelTestExecution(executorSuiteConfig, ctx)
+			log.Warnf("Canceling Test execution %s",executorSuiteConfig.executionID)
+			if err:=t.cancelTestExecution(executorSuiteConfig);err!=nil{
+				return err
+			}
 			return context.Canceled
 		case <-time.After(15 * time.Second):
 			status, err := t.checkStatus(executorSuiteConfig, ctx)
@@ -250,20 +272,20 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if err!=nil{
 		return err
 	}
-	executionURL,err:=t.getAgentURL(testExecutorConfig,APIExecution)
+	executionURL,err:=t.getAgentURL(testExecutorConfig, APICreateExecution)
 	if err!=nil{
 		return err
 	}
-	r, err := http.NewRequestWithContext(ctx,"POST",executionURL , bytes.NewBuffer(b))
+	req, err := http.NewRequestWithContext(ctx,"POST",executionURL , bytes.NewBuffer(b))
 	if err!=nil{
 		return err
 	}
 	if t.config.Username!="" && t.config.Password !=""{
-		r.SetBasicAuth(t.config.Username,t.config.Password)
+		req.SetBasicAuth(t.config.Username,t.config.Password)
 	}
-	r.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
-	response,err:=client.Do(r)
+	response,err:=client.Do(req)
 	if err!=nil{
 		return err
 	}
@@ -290,57 +312,72 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 }
 
 
-func (t *Provider) getArtifacts(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) error {
+func (t *Provider) getArtifacts(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) ([]string,error) {
 	return t.getToscaFiles(testExecutorConfig,APIExecutionArtifactList,APIExecutionArtifact,testExecutorConfig.artifactsPath,ctx)
 }
 
-func (t *Provider) getReports(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) error {
+func (t *Provider) getReports(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) ([]string,error) {
 	return t.getToscaFiles(testExecutorConfig,APIExecutionReportList,APIExecutionReport,testExecutorConfig.reportsPath,ctx)
 }
-func (t *Provider) getXUnit(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) error {
-	xunitURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(APIExecutionXUnit,testExecutorConfig.executionID))
-	if err!=nil{
-		return err
+func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,ctx context.Context) (test.TestResults,error) {
+	testResults := test.TestResults{}
+	testResultFiles,err:=t.getToscaFiles(testExecutorConfig,APIExecutionXUnitList,APIExecutionXUnit,testExecutorConfig.xUnitPath,ctx)
+	if err!=nil {
+		return nil,err
 	}
-	if err:=helper.DownloadFile(xunitURL,testExecutorConfig.xUnitPath,ctx);err!=nil{
-		return err
+	for _, testResultFile := range testResultFiles{
+		testResult, err := test.ReadTestResults(testResultFile)
+		if err!=nil {
+			return nil,err
+		}
+		testResults = append(testResults,testResult)
 	}
-	return nil
+	return testResults,nil
 }
-func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,urlBase string,urldownload string,outputPath string,ctx context.Context) error {
+
+func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,urlBase string,urldownload string,outputPath string,ctx context.Context) ([]string,error) {
+	var toscaFiles []string
 	reportListURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urlBase,testExecutorConfig.executionID))
 	if err!=nil{
-		return err
+		return nil,err
 	}
-	r, err := http.NewRequestWithContext(ctx,"GET",reportListURL,nil)
-	r.Header.Add("Content-Type", "application/json")
+	req, err := http.NewRequestWithContext(ctx,"GET",reportListURL,nil)
+	if err!=nil{
+		return nil,err
+	}
+	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
-	resp,err:=client.Do(r)
+	resp,err:=client.Do(req)
+	if err!=nil{
+		return nil,err
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode!=http.StatusOK {
-		return fmt.Errorf("error when recovering Reports %s",resp.Status)
+		return nil,fmt.Errorf("error when recovering Reports %s",resp.Status)
 	}
 	byteResponse,err:=ioutil.ReadAll(resp.Body)
 	if err!=nil{
-		return err
+		return nil,err
 	}
 	executionResponse:= &TestExecutionResponse{}
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
-		return err
+		return nil,err
 	}
 	if executionResponse.Error !=""{
-		return fmt.Errorf(executionResponse.Error)
+		return nil,fmt.Errorf(executionResponse.Error)
 	}
 	log.Infof("%d files found",len(executionResponse.Files))
 	for _,file := range executionResponse.Files {
 		log.Infof("Downloading %s",file.Path)
 		downloadURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urldownload,testExecutorConfig.executionID,file.Id))
 		if err!=nil{
-			return err
+			return nil,err
 		}
-		err=helper.DownloadFile(downloadURL,path.Join(outputPath,file.Path),ctx)
+		filePath := path.Join(outputPath,file.Path)
+		err=helper.DownloadFile(downloadURL,filePath,ctx)
+		toscaFiles = append(toscaFiles,filePath)
 	}
-	return nil
+	return toscaFiles,nil
 }
 
 type agentController struct {
@@ -357,6 +394,7 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 	if testSuiteConfig.Project.SourceConnectionStringDB!=""{
 		templateType = CreateFromDatabase
 	}
+	rand.Seed(time.Now().UnixNano())
 	rndNumber := rand.Intn(1000 - 1) + 1
 	workspace,err :=t.createProject(ProjectCreateRequest{
 		SourcePath:               testSuiteConfig.Project.SourcePath,
@@ -372,31 +410,31 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 }
 
 func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Context) (ExecutionStatus,error) {
-	executionStatusURL,err:=t.getAgentURL(config,fmt.Sprintf(APIExecutionStatus,config.executionID))
+	executionStatusURL,err:=t.getAgentURL(config,fmt.Sprintf(APIExecution,config.executionID))
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
-	r, err := http.NewRequestWithContext(ctx,"GET", executionStatusURL,nil)
+	req, err := http.NewRequestWithContext(ctx,"GET", executionStatusURL,nil)
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
 
-	r.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
-	response,err:=client.Do(r)
+	response,err:=client.Do(req)
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
 	defer response.Body.Close()
 	byteResponse,err :=ioutil.ReadAll(response.Body)
 	if err!=nil {
-		return "",err
+		return executionFailed,err
 	}
 	if response.StatusCode==http.StatusInternalServerError {
 		return "",fmt.Errorf(string(byteResponse))
 	}
 	if response.StatusCode == http.StatusNotFound {
-		return "",fmt.Errorf("execution not found, agent probably dead")
+		return executionFailed,fmt.Errorf("execution not found, agent probably dead")
 	}
 	executionResponse:= &TestExecutionResponse{}
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
@@ -410,10 +448,31 @@ func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Con
 }
 
 
-func (t *Provider) destroyAgentNode(controller agentController,ctx context.Context) {
+func (t *Provider) destroyAgentNode(controller agentController) error {
 	//TODO
+	return nil
 }
 
-func (t *Provider) cancelTestExecution(config *TestExecutorConfiguration,ctx context.Context) {
-	//TOD@
+func (t *Provider) cancelTestExecution(config *TestExecutorConfiguration) error {
+	cancelExecutionURL, err := t.getAgentURL(config, fmt.Sprintf(APIExecution, config.executionID))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", cancelExecutionURL, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("error: %d (%s) when canceling execution %s",response.StatusCode,response.Status,config.executionID)
+	}
+
+	return nil
 }
