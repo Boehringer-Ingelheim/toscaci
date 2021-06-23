@@ -19,8 +19,6 @@ namespace CIService.Controllers
     [RoutePrefix("api/v2/execution/{id}")]
     public class ExecutionController : ApiController
     {
-
-
         [HttpDelete]
         [Route("")]
         public HttpResponseMessage CancelExecution(string id)
@@ -35,7 +33,6 @@ namespace CIService.Controllers
             {
                 StatusCode = HttpStatusCode.OK                
             };
-
         }
 
         [HttpGet]
@@ -188,8 +185,6 @@ namespace CIService.Controllers
             responseMsg.Content.Headers.ContentLength = filestream.Length;
             return responseMsg;
         }
-
-
         private HttpResponseMessage CreateResponseMessage(HttpStatusCode statusCode, ExecutionTracking executionTracking)
         {
             ExecutionResponse response = new ExecutionResponse();

@@ -114,7 +114,6 @@ namespace CIService.Controllers
             }            
         }
 
-
         private HttpResponseMessage CreateResponseMessage(ProjectInformation project, HttpStatusCode statusCode)
         {
             CreateWorkspaceResponse response = new CreateWorkspaceResponse();

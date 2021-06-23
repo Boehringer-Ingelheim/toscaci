@@ -21,7 +21,6 @@ namespace CIService.Contract
         public ExecutionStatus status { get; set; }
         public Exception error { get; set; }
 
-
         public void Cancel()
         {
             try
