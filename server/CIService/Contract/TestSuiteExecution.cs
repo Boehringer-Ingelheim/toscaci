@@ -34,9 +34,7 @@ namespace CIService.Contract
             }
             catch
             {
-
             }
         }
-
     }
 }

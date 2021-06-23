@@ -28,7 +28,7 @@ namespace CIService.Controllers
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
             executionTrack.Cancel();
             return new HttpResponseMessage()
@@ -45,7 +45,7 @@ namespace CIService.Controllers
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack==null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
             return CreateResponseMessage(HttpStatusCode.OK, executionTrack);
         }
@@ -58,7 +58,7 @@ namespace CIService.Controllers
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
 
             if (executionTrack.status != ExecutionStatus.Completed)
@@ -77,7 +77,7 @@ namespace CIService.Controllers
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
-                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
+                return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
 
             if (executionTrack.status != ExecutionStatus.Completed)

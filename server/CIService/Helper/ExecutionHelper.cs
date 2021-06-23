@@ -27,8 +27,6 @@ namespace CIService.Helper
 
         private static string TBOX_HOME_DIRECTORY = Environment.ExpandEnvironmentVariables(TBOX_HOME);
 
-          
-
         private static void CreateDirectoryIfNotExists(string path)
         {
             bool exists = System.IO.Directory.Exists(path);
@@ -57,7 +55,6 @@ namespace CIService.Helper
                 ExecutionTrackerService.FailExecutionTrackingStatus(executionTracking.id, ex);
             }
 
-
             //Initialize File Structure
             executionTracking.artifactPath = Path.Combine(executionTracking.executionDirectory, ARTIFACTS_DIR_NAME);
             CreateDirectoryIfNotExists(executionTracking.artifactPath);
@@ -78,7 +75,6 @@ namespace CIService.Helper
                 try {
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
-
                         ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;
                         testSuiteExecution.executionPath = Path.Combine(executionTracking.executionDirectory, executionList.UniqueId);
                         testSuiteExecution.executionListName = executionList.DisplayedName;
@@ -87,9 +83,7 @@ namespace CIService.Helper
                         Directory.CreateDirectory(testSuiteExecution.executionPath);
                         executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);                        
                         testSuiteExecution.aOResultFilePath = Path.Combine(testSuiteExecution.executionPath, "result_" + Path.GetFileName(testSuiteExecution.aOFilePath));
-                    }
-
-                    
+                    }                    
                 
                     OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath, executionTracking.artifactPath, executionTracking.request.TestParameters);
                     AgentProcess = new Process
@@ -103,8 +97,7 @@ namespace CIService.Helper
                             RedirectStandardError = true,
                             RedirectStandardInput = true,
                             CreateNoWindow = false,
-                            WorkingDirectory = TBOX_HOME_DIRECTORY,
-                                                       
+                            WorkingDirectory = TBOX_HOME_DIRECTORY,                                                       
                         }
                     };
                     
@@ -115,11 +108,8 @@ namespace CIService.Helper
                     AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
                     {
                         Console.WriteLine(e.Data);
-                    });                    
-
+                    });
                     AgentProcess.Start();
-                    //AgentProcess.BeginErrorReadLine();
-                    //AgentProcess.BeginOutputReadLine();
 
                     testSuiteExecution.tboxProcess = AgentProcess;
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);                    
@@ -154,8 +144,7 @@ namespace CIService.Helper
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
                         foreach (String reportName in executionTracking.request.Reports)
-                        {
-                            
+                        {                            
                             PrintReports(session, executionListId, reportName, executionTracking.reportPath);
                         }                        
                     }
@@ -174,9 +163,7 @@ namespace CIService.Helper
                 {
                     testSuiteExecution.Cancel();                    
                 }
-            }
-                
-                
+            }   
         }
 
         private static void PrintReports(WorkspaceSession session, string executionListId,string reportName,String reportPath)
@@ -184,8 +171,6 @@ namespace CIService.Helper
             var executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;            
             executionList.PrintReport(reportName, Path.Combine(reportPath, executionList.DisplayedName + "_" + reportName + ".pdf"));                                    
         }
-
-
 
         public static void OverrideTcpsWithTestParameters(string AOFilePath, String artifactPath, List<KeyValue> testParameters)
         {            
@@ -224,14 +209,6 @@ namespace CIService.Helper
             AutomationObjectsSerializer.ToFile(AOFilePath, executionTasks, CommonCrypto.Instance.CreateEncryptStream);
         }
 
-        
-
-
-        /// <summary>
-        /// Clear the contents of the DocuSnapper directory. This should be done between executions to ensure a clean state.
-        /// </summary>
-    
-
         private static void CopyFilesRecursively(string sourcePath, string targetPath)
         {
             //Now Create all of the directories
@@ -246,7 +223,6 @@ namespace CIService.Helper
                 File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
             }
         }
-
   
         public static void Empty(this DirectoryInfo directory)
         {
