@@ -19,8 +19,8 @@ import (
 	"toscactl/test"
 )
 const(
-    APIExecution = "execution"
-    APIExecutionStatus = "execution/%s"
+    APICreateExecution    = "execution"
+    APIExecution          = "execution/%s"
 	APIExecutionXUnitList = "execution/%s/xunit"
 	APIExecutionXUnit = "execution/%s/xunit/%s"
 	APIExecutionReportList = "execution/%s/report"
@@ -42,6 +42,7 @@ const(
 	executionGeneratingReports      ExecutionStatus = "GeneratingReports"
 	executionCompleted              ExecutionStatus = "Completed"
 	executionFailed                 ExecutionStatus = "Failed"
+	executionCanceled               ExecutionStatus = "Canceled"
 
 )
 
@@ -147,7 +148,7 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	}
 	executorSuiteConfig:= &TestExecutorConfiguration{
 		buildDirectory: buildDirPath,
-		xUnitPath:      path.Join(buildDirPath, fmt.Sprintf("%s-junit.xml", suiteConfig.Name)),
+		xUnitPath:      path.Join(buildDirPath,"junit"),
 		artifactsPath:  path.Join(buildDirPath,"Artifacts"),
 		reportsPath:    path.Join(buildDirPath,"Reports"),
 	}
@@ -159,10 +160,14 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		}
 		//TODO set hostname
 		executorSuiteConfig.hostname=agentController.hostname
-		defer t.destroyAgentNode(agentController,timeoutContext)
+		defer func(){
+			if err2:=t.destroyAgentNode(agentController);err2!=nil{
+				err=fmt.Errorf("error when destroying tosca agent: please remove it by hand, %v",err2)
+			}
+		}()
 		//TODO get hostname and VM Controller
 	}else{
-		executorSuiteConfig.hostname=suiteConfig.Agent.Hostname
+ 		executorSuiteConfig.hostname=suiteConfig.Agent.Hostname
 	}
 	log.Infof("Selected Node %s",suiteConfig.Agent.Hostname)
 	log.Infof("Preparing Workspace...")
@@ -176,7 +181,12 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	if err!=nil{
 		return err
 	}
-	defer t.DeleteWorkspace(executorSuiteConfig,timeoutContext)
+	defer func(){
+		log.Infof("Deleting Workspace")
+		if err2:=t.DeleteWorkspace(executorSuiteConfig,context.Background());err2!=nil{
+			err=fmt.Errorf("error when deleting workspace: please remove it by hand, %v",err2)
+		}
+	}()
 	log.Infof("Workspace %s ready", executorSuiteConfig.workspace.SessionID)
 
 	log.Infof("Requesting Test %s on workspace %s",suiteConfig.Name,executorSuiteConfig.workspace.SessionID)
@@ -189,19 +199,20 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		return err
 	}
 
-	log.Infof("Test %s completed, downloading xunit results",suiteConfig.Name)
-	testReports,err := t.getTestReports(executorSuiteConfig,timeoutContext);
+	log.Infof("Test %s completed",suiteConfig.Name)
+	log.Infof("Downloading xunit results")
+	testReports,err := t.getTestReports(executorSuiteConfig,timeoutContext)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("downloading Reports")
+	log.Infof("Downloading Reports")
 	_,err = t.getReports(executorSuiteConfig,timeoutContext)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("downloading artifacts")
+	log.Infof("Downloading artifacts")
 	_,err = t.getArtifacts(executorSuiteConfig,timeoutContext)
 	if err != nil {
 		return err
@@ -218,7 +229,7 @@ func (t *Provider) requestTestExecution(executorSuiteConfig *TestExecutorConfigu
 	err := retry.Do(func() error {
 		return t.triggerExecution(executorSuiteConfig, timeoutContext)
 	}, retry.RetryIf(func(err error) bool {
-		if err == AlreadyRunningExecution {
+		if errors.Is(err,AlreadyRunningExecution) {
 			log.Warn("other execution still running, waiting for agent being free")
 			return true
 		}
@@ -234,7 +245,10 @@ func (t *Provider) waitUntilCompletion(ctx context.Context, executorSuiteConfig 
 	for {
 		select {
 		case <-ctx.Done():
-			t.cancelTestExecution(executorSuiteConfig, ctx)
+			log.Warnf("Canceling Test execution %s",executorSuiteConfig.executionID)
+			if err:=t.cancelTestExecution(executorSuiteConfig);err!=nil{
+				return err
+			}
 			return context.Canceled
 		case <-time.After(15 * time.Second):
 			status, err := t.checkStatus(executorSuiteConfig, ctx)
@@ -258,7 +272,7 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if err!=nil{
 		return err
 	}
-	executionURL,err:=t.getAgentURL(testExecutorConfig,APIExecution)
+	executionURL,err:=t.getAgentURL(testExecutorConfig, APICreateExecution)
 	if err!=nil{
 		return err
 	}
@@ -328,9 +342,15 @@ func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,u
 		return nil,err
 	}
 	req, err := http.NewRequestWithContext(ctx,"GET",reportListURL,nil)
+	if err!=nil{
+		return nil,err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	resp,err:=client.Do(req)
+	if err!=nil{
+		return nil,err
+	}
 	defer resp.Body.Close()
 	if resp.StatusCode!=http.StatusOK {
 		return nil,fmt.Errorf("error when recovering Reports %s",resp.Status)
@@ -374,6 +394,7 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 	if testSuiteConfig.Project.SourceConnectionStringDB!=""{
 		templateType = CreateFromDatabase
 	}
+	rand.Seed(time.Now().UnixNano())
 	rndNumber := rand.Intn(1000 - 1) + 1
 	workspace,err :=t.createProject(ProjectCreateRequest{
 		SourcePath:               testSuiteConfig.Project.SourcePath,
@@ -389,31 +410,31 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 }
 
 func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Context) (ExecutionStatus,error) {
-	executionStatusURL,err:=t.getAgentURL(config,fmt.Sprintf(APIExecutionStatus,config.executionID))
+	executionStatusURL,err:=t.getAgentURL(config,fmt.Sprintf(APIExecution,config.executionID))
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
 	req, err := http.NewRequestWithContext(ctx,"GET", executionStatusURL,nil)
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	response,err:=client.Do(req)
 	if err!=nil{
-		return "",err
+		return executionFailed,err
 	}
 	defer response.Body.Close()
 	byteResponse,err :=ioutil.ReadAll(response.Body)
 	if err!=nil {
-		return "",err
+		return executionFailed,err
 	}
 	if response.StatusCode==http.StatusInternalServerError {
 		return "",fmt.Errorf(string(byteResponse))
 	}
 	if response.StatusCode == http.StatusNotFound {
-		return "",fmt.Errorf("execution not found, agent probably dead")
+		return executionFailed,fmt.Errorf("execution not found, agent probably dead")
 	}
 	executionResponse:= &TestExecutionResponse{}
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
@@ -427,10 +448,31 @@ func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Con
 }
 
 
-func (t *Provider) destroyAgentNode(controller agentController,ctx context.Context) {
+func (t *Provider) destroyAgentNode(controller agentController) error {
 	//TODO
+	return nil
 }
 
-func (t *Provider) cancelTestExecution(config *TestExecutorConfiguration,ctx context.Context) {
-	//TOD@
+func (t *Provider) cancelTestExecution(config *TestExecutorConfiguration) error {
+	cancelExecutionURL, err := t.getAgentURL(config, fmt.Sprintf(APIExecution, config.executionID))
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest("DELETE", cancelExecutionURL, nil)
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	response, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("error: %d (%s) when canceling execution %s",response.StatusCode,response.Status,config.executionID)
+	}
+
+	return nil
 }

@@ -20,7 +20,7 @@ namespace CIService.Service
         {
             lock (executionTrackerLockObject)
             {
-                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed).ToList();
+                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.status != ExecutionStatus.Canceled).ToList();
             }
         }
 
@@ -28,7 +28,7 @@ namespace CIService.Service
         {
             lock (executionTrackerLockObject)
             {
-                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.workspaceID.Equals(workspaceID)).ToList();
+                return executionTracker.Where(t => t.status != ExecutionStatus.Completed && t.status != ExecutionStatus.Failed && t.status != ExecutionStatus.Canceled && t.workspaceID.Equals(workspaceID)).ToList();
             }
         }
 
@@ -67,13 +67,21 @@ namespace CIService.Service
             });
         }
 
-        internal static void FailExecutionTrackingStatus(string id, Exception ex)
+        public static void FailExecutionTrackingStatus(string id, Exception ex)
         {
             SetExecutionTracking(id, t =>
             {
                 t.status = ExecutionStatus.Failed;
                 t.error = ex;
             });
+        }
+
+        public static void CleanExecutionsByWorkspace(string workspaceID)
+        {
+            lock (executionTrackerLockObject)
+            {                
+                executionTracker.RemoveAll(t => t.workspaceID.Equals(workspaceID));
+            }
         }
     }
 }

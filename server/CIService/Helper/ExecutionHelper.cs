@@ -20,6 +20,7 @@ namespace CIService.Helper
     {
         private const string ARTIFACTS_PATH_NAME = "ARTIFACTS_PATH";
         private const string ARTIFACTS_DIR_NAME = "artifacts";
+        private const string XUNITS_DIR_NAME = "xunits";
         private const string REPORTS_DIR_NAME = "Reports";
         private const string TBOX_HOME = "%TBOX_HOME%";
         private static string TBOX_AGENT_EXE = "Tricentis.Automation.Agent.exe";
@@ -38,7 +39,8 @@ namespace CIService.Helper
 
         public static void TriggerExecution(ExecutionTracking executionTracking, List<String> executionListIDs)
         {
-            new Thread(() => { RunExecution(executionTracking, executionListIDs); }).Start();
+            executionTracking.thread = new Thread(() => { RunExecution(executionTracking, executionListIDs); });
+            executionTracking.thread.Start();            
         }
 
         public static void RunExecution(ExecutionTracking executionTracking, List<String> executionListIDs)
@@ -55,49 +57,100 @@ namespace CIService.Helper
                 ExecutionTrackerService.FailExecutionTrackingStatus(executionTracking.id, ex);
             }
 
-            foreach(String executionListId in executionListIDs)
-            {
 
+            //Initialize File Structure
+            executionTracking.artifactPath = Path.Combine(executionTracking.executionDirectory, ARTIFACTS_DIR_NAME);
+            CreateDirectoryIfNotExists(executionTracking.artifactPath);
+            executionTracking.xunitPath = Path.Combine(executionTracking.executionDirectory, XUNITS_DIR_NAME);
+            CreateDirectoryIfNotExists(executionTracking.xunitPath);
+            executionTracking.reportPath = Path.Combine(executionTracking.executionDirectory, REPORTS_DIR_NAME);
+            CreateDirectoryIfNotExists(executionTracking.reportPath);
+
+            foreach (String executionListId in executionListIDs)
+            {
+                if (executionTracking.cancel)
+                {
+                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
+                    return;
+                }
                 TestSuiteExecution testSuiteExecution = new TestSuiteExecution();
+                executionTracking.AddExecution(testSuiteExecution);
                 try {
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
-                        executionTracking.aOFilePath = session.GetAutomationObjectFromExecutionList(executionTracking.executionDirectory, executionListId);
+
+                        ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;
+                        testSuiteExecution.executionPath = Path.Combine(executionTracking.executionDirectory, executionList.UniqueId);
+                        testSuiteExecution.executionListName = executionList.DisplayedName;
+                        testSuiteExecution.aOFilePath = Path.Combine(testSuiteExecution.executionPath, testSuiteExecution.executionListName + ".tas");
+                        //executionList.WriteAutomationObjects(testSuiteExecution.executionPath, "false", "false");
+                        Directory.CreateDirectory(testSuiteExecution.executionPath);
+                        executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);                        
+                        testSuiteExecution.aOResultFilePath = Path.Combine(testSuiteExecution.executionPath, "result_" + Path.GetFileName(testSuiteExecution.aOFilePath));
                     }
 
-                    executionTracking.aOResultFilePath = Path.Combine(Path.GetDirectoryName(executionTracking.aOFilePath), "result_" + Path.GetFileName(executionTracking.aOFilePath));
-                    executionTracking.artifactPath = Path.Combine(executionTracking.executionDirectory, ARTIFACTS_DIR_NAME);
-                    new System.IO.FileInfo(executionTracking.artifactPath).Directory.Create();
-                    OverrideTcpsWithTestParameters(executionTracking.aOFilePath, executionTracking.artifactPath, executionTracking.request.TestParameters);
+                    
+                
+                    OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath, executionTracking.artifactPath, executionTracking.request.TestParameters);
                     AgentProcess = new Process
                     {
                         StartInfo = new ProcessStartInfo
                         {
                             FileName = Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE),
-                            Arguments = " 12342 Slim " + executionTracking.aOFilePath, // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
+                            Arguments = " 12342 Slim " + testSuiteExecution.aOFilePath, // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            RedirectStandardInput = true,
                             CreateNoWindow = false,
-                            WorkingDirectory = TBOX_HOME_DIRECTORY
+                            WorkingDirectory = TBOX_HOME_DIRECTORY,
+                                                       
                         }
                     };
+                    
+                    AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
+                    {
+                        Console.WriteLine(e.Data);
+                    });
+                    AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
+                    {
+                        Console.WriteLine(e.Data);
+                    });                    
 
                     AgentProcess.Start();
-                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);
-                    string debug = Debug(AgentProcess);
+                    //AgentProcess.BeginErrorReadLine();
+                    //AgentProcess.BeginOutputReadLine();
+
+                    testSuiteExecution.tboxProcess = AgentProcess;
+                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);                    
                     AgentProcess.WaitForExit();
-                    AgentProcess.exit
+                    if (executionTracking.cancel)
+                    {
+                        ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
+                        return;
+                    }
+                    if (AgentProcess.ExitCode != 0)
+                    {
+                        throw new ApplicationException("TBOX Failed with exit code:" + AgentProcess.ExitCode);
+                    }
+                    //Copy xunit file  generated with tbox to delivery folder, as the name is based on executionList display name, we need to randomize name to avoid file overwritting
+                    String xunitFileExecutionPath = Path.Combine(testSuiteExecution.executionPath, "junit_result_" + testSuiteExecution.executionListName + ".xml");
+                    String xunitFileResultPath = Path.Combine(executionTracking.xunitPath, "junit_result_" + testSuiteExecution.executionListName + new Random().Next()+ ".xml");
+                    File.Copy(xunitFileExecutionPath, xunitFileResultPath);
+                   
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.ImportingResults);
-                        ImportResults(session, executionTracking.aOResultFilePath);
+                        ImportResults(session, testSuiteExecution.aOResultFilePath);
                         session.Save();
                     }
 
-
-                    executionTracking.reportPath = Path.Combine(executionTracking.executionDirectory, REPORTS_DIR_NAME);
-                    CreateDirectoryIfNotExists(executionTracking.reportPath);
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.GeneratingReports);
+                    if (executionTracking.cancel)
+                    {
+                        ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
+                        return;
+                    }
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
                     {
                         foreach (String reportName in executionTracking.request.Reports)
@@ -105,6 +158,11 @@ namespace CIService.Helper
                             
                             PrintReports(session, executionListId, reportName, executionTracking.reportPath);
                         }                        
+                    }
+                    if (executionTracking.cancel)
+                    {
+                        ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
+                        return;
                     }
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Completed);
                 }
@@ -114,7 +172,7 @@ namespace CIService.Helper
                 }
                 finally
                 {
-                    KillAgentProcess(AgentProcess);
+                    testSuiteExecution.Cancel();                    
                 }
             }
                 
@@ -166,14 +224,7 @@ namespace CIService.Helper
             AutomationObjectsSerializer.ToFile(AOFilePath, executionTasks, CommonCrypto.Instance.CreateEncryptStream);
         }
 
-        public static void KillAgentProcess(Process AgentProcess)
-        {
-            if (AgentProcess!=null && !AgentProcess.HasExited)
-            {
-                AgentProcess?.Kill();
-                AgentProcess.WaitForExit();
-            }
-        }
+        
 
 
         /// <summary>
@@ -209,18 +260,6 @@ namespace CIService.Helper
                 tcTaskParams.AddParam("AOResultFilePath", AOResultFile);
                 session.GetWorkspace().GetProject().ExecuteTask("CIAddin.Tasks.ImportAutomationObjectResultsToExecutionLogTask", tcTaskParams);                          
                 //session.GetWorkspace().GetProject().ImportAOResults(AOResultFile);
-        }
-
-
-        private static string Debug(Process proc)
-        {
-            string allStrings = "";
-            while (!proc.StandardOutput.EndOfStream)
-            {
-                allStrings += proc.StandardOutput.ReadLine() + Environment.NewLine;
-                Console.Write(allStrings);
-            }
-            return allStrings;
         }
     }
 }

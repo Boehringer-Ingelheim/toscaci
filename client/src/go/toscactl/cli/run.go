@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -15,6 +17,7 @@ const(
 	configIssue=1
 	failedTests=2
 	unknownError=3
+	canceled=4
 
 )
 var (
@@ -72,8 +75,13 @@ var (
 				}
 
 				if err=toscaProvider.RunTestSuite(*testSuiteConfig,cmd.Context());err!=nil{
-					if err==tosca.TestsFailed {
+					if errors.Is(err,tosca.TestsFailed) {
 						os.Exit(failedTests)
+					}else if errors.Is(err, context.Canceled) {
+						os.Exit(canceled)
+					}else if  errors.Is(err, context.DeadlineExceeded){
+						log.Errorf("Test canceled due timeout")
+						os.Exit(canceled)
 					}else{
 						log.Errorf("Error when executing TestSuite:%s, error: %v", testSuiteName,err)
 						os.Exit(unknownError)

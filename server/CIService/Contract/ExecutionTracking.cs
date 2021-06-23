@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace CIService.Contract
 {
@@ -21,6 +22,9 @@ namespace CIService.Contract
         public string workspaceID { get; set; }
         public string workspaceDirectory { get; set; }
 
+        internal Thread thread { get; set; }
+
+        internal Boolean cancel { get; set; } = false;
         public List<TestSuiteExecution> executions  { get; set; }
 
         public string artifactsDirectory { get; set; }
@@ -30,13 +34,31 @@ namespace CIService.Contract
         [JsonConverter(typeof(StringEnumConverter))]
         public ExecutionStatus status { get; set; }
         public Exception error { get; set; }
-   
+
+        public void Cancel()
+        {
+            cancel = true;
+            foreach(var execution in executions)
+            {
+                execution.Cancel();
+            }
+            thread.Join();
+        }
 
         public ExecutionTracking(string id, ExecutionRequest request)
         {
             this.id = id;
             this.request = request;
             this.workspaceID = request.sessionID;
+        }
+
+        internal void AddExecution(TestSuiteExecution testSuiteExecution)
+        {
+            if(executions == null)
+            {
+                executions = new List<TestSuiteExecution>();
+            }
+            executions.Add(testSuiteExecution);
         }
     }
 }

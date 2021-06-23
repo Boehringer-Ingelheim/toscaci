@@ -102,6 +102,7 @@ namespace CIService.Controllers
             }
             try { 
                 WorkspaceService.DeleteWorkspace(workspaceID);
+                ExecutionTrackerService.CleanExecutionsByWorkspace(workspaceID);
                 return new HttpResponseMessage()
                 {
                     StatusCode = HttpStatusCode.OK

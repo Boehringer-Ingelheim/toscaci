@@ -30,6 +30,12 @@ namespace CIService.Controllers
             {
                 return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");// return 404
             }
+            executionTrack.Cancel();
+            return new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK                
+            };
+
         }
 
         [HttpGet]
@@ -60,13 +66,13 @@ namespace CIService.Controllers
                 return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" is in {executionTrack.status}, can not extract xunit");
             }
 
-            string[] reportList = Directory.GetFiles(executionTrack.xunitPath);
-            return CreateResponseMessage(HttpStatusCode.OK, executionTrack.xunitPath, reportList);
+            string[] xunitList = Directory.GetFiles(executionTrack.xunitPath);
+            return CreateResponseMessage(HttpStatusCode.OK, executionTrack.xunitPath, xunitList);
         }
 
         [HttpGet]
         [Route("xunit/{xunitID}")]
-        public HttpResponseMessage GetReport(string id, string xunitID)
+        public HttpResponseMessage GetXunit(string id, string xunitID)
         {
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
@@ -79,13 +85,13 @@ namespace CIService.Controllers
                 return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" is in {executionTrack.status}, can not extract xunit");
             }
 
-            string reportFilePath = Path.Combine(executionTrack.xunitPath, Encoding.UTF8.GetString(Convert.FromBase64String(xunitID)));
-            var fileInfo = new System.IO.FileInfo(reportFilePath);
+            string xunitFilePath = Path.Combine(executionTrack.xunitPath, Encoding.UTF8.GetString(Convert.FromBase64String(xunitID)));
+            var fileInfo = new System.IO.FileInfo(xunitFilePath);
             FileStream filestream = fileInfo.OpenRead();
             HttpResponseMessage responseMsg = new HttpResponseMessage(HttpStatusCode.OK);
             responseMsg.Content = new StreamContent(filestream);
             responseMsg.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment");
-            responseMsg.Content.Headers.ContentDisposition.FileName = Path.GetFileName(reportFilePath);
+            responseMsg.Content.Headers.ContentDisposition.FileName = Path.GetFileName(xunitFilePath);
             responseMsg.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
             responseMsg.Content.Headers.ContentLength = filestream.Length;
             return responseMsg;

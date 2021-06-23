@@ -16,8 +16,8 @@ namespace CIService.Service
     {
         public static void DeleteWorkspace(String workspaceID)
         {
-            String ProjectPath = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(workspaceID));
-            Directory.Delete(ProjectPath, true);
+            String ProjectPath = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(workspaceID));            
+            Directory.Delete(Directory.GetParent(ProjectPath).Parent.FullName, true);
         }
         public static ProjectInformation CreateProject(CreateProject createProject)
         {
