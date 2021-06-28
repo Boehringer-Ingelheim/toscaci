@@ -234,7 +234,7 @@ func (t *Provider) requestTestExecution(executorSuiteConfig *TestExecutorConfigu
 			return true
 		}
 		return false
-	}), retry.Delay(10*time.Second), retry.Context(timeoutContext))
+	}), retry.Attempts(10000),retry.DelayType(retry.FixedDelay),retry.Delay(15*time.Second),retry.Context(timeoutContext))
 	if err != nil {
 		return  err
 	}
@@ -297,6 +297,7 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if response.StatusCode==http.StatusInternalServerError {
 		return fmt.Errorf(string(byteResponse))
 	}
+
 	if response.StatusCode == http.StatusConflict {
 		return AlreadyRunningExecution
 	}
