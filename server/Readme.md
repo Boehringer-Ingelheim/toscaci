@@ -1,33 +1,22 @@
-# Tosca Continuous Integration Service
-
-
-## Architecture
+# CIService
 
 ## Build
 ### 1. Prerequisites
 - Visual Studio at least 2019
 - .Net Framework 4.8
-- Tosca 14.0
-### 2. Tosca Commander addon and service
+- Tosca 13.1 installed on the default path
+### 2. Build procedure
+To build the project build it as any .Net Project
+```cmd
+nuget restore
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\\MSBuild.exe" ToscaCI.sln /P:Configuration=Debug /t:Build
+```
 
-### 3. Agent orchestrator
-
-
-## Installing Service
-
-## API Definition
-
-## Client usage
-
-### examples
-
-
-## Checklist
-
+## Features
+Feature list
 
 ### Orchestrator
 - [ ] Create Tosca Agent on demand or at least clean environment.
-- [ ] Prepare Windows Tosca Agent VM Template.
 - [ ] Governance of Tosca Agents.
 
 
@@ -53,7 +42,6 @@
 
 ### Client
 - [ ] Request Tosca Agent clean environment
-- [ ] Implement Tosca CI Service API to create project and execute tests.
-- [ ] Document client usage.
-- [ ] Document building.
-- [ ] Tosca Project example QuickStarter Template.
+- [x] Implement Tosca CI Service API to create project and execute tests.
+- [x] Report generation.
+- [x] E2ETosca Project example
