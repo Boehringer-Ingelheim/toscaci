@@ -1,5 +1,5 @@
 # toscaci
-Tosca cli tool and a rest API service that improve interaction of CI Tools with Tosca in a clean and escalable way.
+Tosca CLI tool and a rest API service that improve the interaction between CI Tools and Tosca in a clean and scalable way.
 
 [![Build](https://github.com/segator/toscaci/actions/workflows/build.yml/badge.svg)](https://github.com/segator/toscaci/actions/workflows/build.yml)
 
@@ -17,15 +17,15 @@ Tosca cli tool and a rest API service that improve interaction of CI Tools with 
 
 
 ## History
-if you tried to integrate Tosca on a modern CI enterprise platform you will notice lot of limitations on how Tosca can be integrated, some of the issues:
-- No easy way to create Projects via cli or api.
-- Test definitions are keep on a DB, so dificult portability of the tosca projects
-- No support for test runtime parameters like url of application under test
-- No git friendly
-- Tosca concurrency model and locking system causes CI fails if users forgot to check in tosca project.
-- Tosca VM Agent pinned with User Project, hard test infrastructure resources escalability.
+If you have evere tried to integrate Tosca with a modern CI enterprise platform you will notice lot of limitations on how that can be done, for instance:
+- There is no easy way to create Projects via CPI or API.
+- Test definitions are kept in a DB, dificulting the portability of tosca projects.
+- There is no support for test runtime parameters like the url of the application under testing.
+- It is not git friendly.
+- The Tosca concurrency model and locking system causes CI fails if users forget to check in tosca project.
+- The Tosca VM agent pinned is with a User Project, hard test infrastructure resources scalability.
 
-This project has been created to fix all this issues and make the integration with your Continuous Integration pipelines as easy as possible.
+This project has been conceived to fix all this issues and make the integration of Tosca with your Continuous Integration pipelines as easy as possible.
 
 ## Features
 - [x] Inject runtime parameters to tosca, no need to define test parameters on tosca test definition, just use a config parameter on tosca.
@@ -40,7 +40,7 @@ This project has been created to fix all this issues and make the integration wi
 - Tosca Commander 13.1 installed
 
 ## Architecture
-This product is based in three components
+This product is based in three components:
 * Windows Rest API Service (CIService)
 * Tosca Commander Addon
 * Multiplatform CLI Tool (toscactl)
@@ -50,7 +50,7 @@ This product is based in three components
 
 
 ## Getting started
-To be able to use this tool you first need to understand how to use the toscactl and configure the CIService
+To be able to use this tool you first need to understand how to use the toscactl and configure the CIService:
 
 ## Using CLI tool
 Get the cli tool from https://github.com/Boehringer-Ingelheim/toscaci/releases
@@ -115,13 +115,13 @@ an example could be ```toscactl run --suite-parameter URL=http://google.com acce
 
 
 ## Configure CIService
-To install CIService you need to do next actions:
+To install CIService you need to follow the following steps:
 1. Get the CIService from from https://github.com/Boehringer-Ingelheim/toscaci/releases files ```toscaci-service-windows-amd64.zip``` and ```toscacommander-addon-windows-amd64.zip```
-2. unzip ```toscacommander-addon-windows-amd64.zip``` on ```C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander```
-3. unzip ```toscaci-service-windows-amd64.zip``` in your prefered place
-4. open unziped folder and run CIService.exe
+2. Unzip ```toscacommander-addon-windows-amd64.zip``` on ```C:\Program Files (x86)\TRICENTIS\Tosca Testsuite\ToscaCommander```
+3. Unzip ```toscaci-service-windows-amd64.zip``` in your prefered place
+4. Open the unziped folder and run CIService.exe
 
-5. if you want the application runs on  windows bootup we recommend to create a windows schedule task that execute the application on boot
-6. Also enable a windows user autologon on boot
+5. If you want the application to run on Windows startup we recommend to create a Windows Scheduled Task.
+6. In addition, enable a Windows user autologon on startup.
 
-Unfortunatelly tosca requires full UI interaction so the application can not run as Windows service.
+Unfortunately, tosca requires full UI interaction. Because of this it cannot be run as a Windows service.
