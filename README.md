@@ -13,7 +13,7 @@ Tosca cli tool and a rest API service that improve interaction of CI Tools with 
   - [CIService](#Configure-CIService)
 - Development
   - [CLI tool](./client/README.md)
-  - [CIService](./server/README.md)
+  - [CIService](./server/Readme.md)
 
 
 ## History
