@@ -17,7 +17,7 @@ Tosca CLI tool and a rest API service that improve the interaction between CI To
 
 
 ## History
-If you have evere tried to integrate Tosca with a modern CI enterprise platform you will notice lot of limitations on how that can be done, for instance:
+If you have ever tried to integrate Tosca with a modern CI enterprise platform you will notice lot of limitations on how that can be done, for instance:
 - There is no easy way to create Projects via CPI or API.
 - Test definitions are kept in a DB, dificulting the portability of tosca projects.
 - There is no support for test runtime parameters like the url of the application under testing.
