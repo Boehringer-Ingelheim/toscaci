@@ -217,8 +217,10 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	if err != nil {
 		return err
 	}
-
-	log.Infof("Test Suite %s %d test failed, %d tests executed, results saved on %s",suiteConfig.Name,testReports.GetNumberFailedTests(),testReports.GetNumberTests(),executorSuiteConfig.buildDirectory)
+	failedTests := testReports.GetNumberFailedTests()
+	testsWithErrors := testReports.GetNumberErrorsTests()
+	totalTests :=testReports.GetNumberTests()
+	log.Infof("Test Suite %s %d test failed, %d tests with errors, %d tests executed, results saved on %s",suiteConfig.Name,failedTests,testsWithErrors,totalTests,executorSuiteConfig.buildDirectory)
 	if testReports.GetNumberFailedTests() > 0 {
 		return TestsFailed
 	}

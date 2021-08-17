@@ -44,6 +44,13 @@ func (t TestResults) GetNumberFailedTests() (errors int32) {
 	return errors
 }
 
+func (t TestResults) GetNumberErrorsTests() (errors int32) {
+	for _,xunit := range t {
+		errors+=xunit.GetNumberTestsWithErrors()
+	}
+	return errors
+}
+
 func (t TestResults) GetNumberTests() (totalTest int32) {
 	for _,xunit := range t {
 		totalTest+=xunit.GetNumberTests()
@@ -59,6 +66,13 @@ type Xunit struct {
 }
 
 func (x Xunit) GetNumberFailedTests() (errors int32) {
+	for _, testSuite := range x.Testsuite {
+		errors+=testSuite.Failures
+	}
+	return errors
+}
+
+func (x Xunit) GetNumberTestsWithErrors() (errors int32) {
 	for _, testSuite := range x.Testsuite {
 		errors+=testSuite.Errors
 	}
