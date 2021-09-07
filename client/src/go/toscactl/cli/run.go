@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"os"
+	"os/exec"
 	"path"
 	"toscactl/entity"
 	"toscactl/tosca"
@@ -83,6 +84,27 @@ var (
 				testSuiteConfig.Agent.Selectors.AddAll(agentSelectorsFlag)
 				testSuiteConfig.TestSuite.Selectors.AddAll(testSuiteSelectorsFlag)
 				testSuiteConfig.TestSuite.Parameters.AddAll(parametersFlag)
+
+				//Inject Jenkins environment vars if available
+				value, present := os.LookupEnv("BUILD_NUMBER")
+				if present && len(value) > 0 {
+					testSuiteConfig.TestSuite.Parameters.Set("JENKINS_JOB_EXECUTION="+value)
+				}
+				value, present = os.LookupEnv("JOB_URL")
+				if present && len(value) > 0 {
+					testSuiteConfig.TestSuite.Parameters.Set("JENKINS_JOB_URL="+value)
+				}
+				
+				//Inject git vars if available				
+				out, err := exec.Command("git", "config", "--get", "remote.origin.url").Output()
+				if err == nil  && len(out) > 0 {
+					testSuiteConfig.TestSuite.Parameters.Set("GIT_REPO_URL="+string(out))
+				}
+				out, err = exec.Command("git", "rev-parse", "--HEAD").Output()
+				if err == nil  && len(out) > 0 {
+					testSuiteConfig.TestSuite.Parameters.Set("GIT_REF="+string(out))
+				}
+
 				testSuiteConfig.TestSuite.Reports.AddAll(reportsFlag)
 
 				if err=testSuiteConfig.Validate();err!=nil{
