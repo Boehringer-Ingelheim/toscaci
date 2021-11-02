@@ -251,7 +251,7 @@ func (t *Provider) waitUntilCompletion(ctx context.Context, executorSuiteConfig 
 			if err:=t.cancelTestExecution(executorSuiteConfig);err!=nil{
 				return err
 			}
-			return context.Canceled
+			return ctx.Err()
 		case <-time.After(15 * time.Second):
 			status, err := t.checkStatus(executorSuiteConfig, ctx)
 			log.Infof("Execution %s is in %s state", executorSuiteConfig.executionID, status)
