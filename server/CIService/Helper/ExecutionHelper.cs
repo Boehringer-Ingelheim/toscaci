@@ -101,6 +101,8 @@ namespace CIService.Helper
                         }
                     };
                     
+
+
                     AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
                     {
                         Console.WriteLine(e.Data);
@@ -110,6 +112,8 @@ namespace CIService.Helper
                         Console.WriteLine(e.Data);
                     });
                     AgentProcess.Start();
+                    AgentProcess.BeginOutputReadLine();
+                    AgentProcess.BeginErrorReadLine();
 
                     testSuiteExecution.tboxProcess = AgentProcess;
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);                    
