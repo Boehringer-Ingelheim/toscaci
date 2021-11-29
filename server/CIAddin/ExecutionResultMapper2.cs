@@ -2,18 +2,14 @@
 using System.Linq;
 
 using AutoMapper;
-
-using Tricentis.Automation.Contract.Results;
-using Tricentis.Automation.TCAddIns.ExecutionAddIn.Execution.Factory;
-using Tricentis.Automation.TCAddIns.ExecutionAddIn.Execution.ResultMappers;
-using Tricentis.ExecutionResults.ServiceConnection.Model;
-using Tricentis.TCAPIObjects.Objects;
 using Tricentis.TCCore.Base;
 using Tricentis.TCCore.Persistency;
 using ExecutionResult = Tricentis.Automation.Contract.Results.ExecutionResult;
 using ExecutionTestCaseLog = Tricentis.TCCore.BusinessObjects.ExecutionLists.ExecutionLogs.ExecutionTestCaseLog;
 using ExecutionEntry = Tricentis.TCCore.BusinessObjects.ExecutionLists.ExecutionEntry;
 using ExecutionLog = Tricentis.TCCore.BusinessObjects.ExecutionLists.ExecutionLogs.ExecutionLog;
+using Tricentis.TCAddIns.XDefinitions.ResultMappers;
+using Tricentis.TCAddIns.XDefinitions.ResultMappers.Factory;
 
 namespace CIAddin
 {
