@@ -164,7 +164,7 @@ jobs:
       - uses: actions/github-script@v4
         id: cache-key
         env:
-          KEY: ${{ secrets.TRICENTIS_13_1P9_URL }}
+          KEY: ${{ secrets.TRICENTIS_14_3_STS_URL }}
         with:
           script: |
               const { KEY } = process.env
@@ -177,11 +177,11 @@ jobs:
       - name: Setup Tosca
         run: |                      
            if(![System.IO.Directory]::Exists("tosca-installer")){
-              Invoke-WebRequest "${{ secrets.TRICENTIS_13_1P9_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
+              Invoke-WebRequest "${{ secrets.TRICENTIS_14_3_STS_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
               expand-archive .\tosca-installer.zip              
               Remove-Item tosca-installer.zip
            }           
-           Start-Process '.\tosca-installer\Tricentis Tosca 13.1 Patch9.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
+           Start-Process '.\tosca-installer\Tricentis Tosca 14.3.0 STS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
       - name: Build
         working-directory: server
         shell: cmd
