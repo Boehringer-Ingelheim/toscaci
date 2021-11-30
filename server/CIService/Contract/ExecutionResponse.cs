@@ -14,6 +14,9 @@ namespace CIService.Contract
         [JsonProperty("executionID")]
         public string executionID { get; set; }
 
+        [JsonProperty("executionLists")]
+        public List<ExecutionList> executionLists { get; set; }
+
         [JsonProperty("status")]
         public string status { get; set; }
 

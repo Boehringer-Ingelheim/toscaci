@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Include="AutomationObjectsSerializer.cs" />
     <Compile Include="Contract\CreateWorkspaceResponse.cs" />
+    <Compile Include="Contract\ExecutionList.cs" />
     <Compile Include="Contract\ExecutionTracking.cs" />
     <Compile Include="Contract\FileInfo.cs" />
     <Compile Include="Contract\KeyValue.cs" />

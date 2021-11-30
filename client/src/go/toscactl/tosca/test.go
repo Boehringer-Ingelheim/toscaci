@@ -66,15 +66,21 @@ type TestExecutorConfiguration struct {
 	workspace          *Workspace `json:"-"`
 	hostname           string     `json:"-"`
 	executionID        string     `json:"-"`
+	executionLists     []ExecutionList
 }
 type ExecutionFiles struct {
 	Id   string
 	Path string
 	Size int64
 }
+type ExecutionList struct {
+	Name string
+	Entries []string
+}
 type TestExecutionResponse struct {
 	Error       string
 	ExecutionID string
+	ExecutionLists []ExecutionList
 	Status      ExecutionStatus
 	Files       []ExecutionFiles
 }
@@ -195,6 +201,17 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	if err := t.requestTestExecution(executorSuiteConfig, timeoutContext);err!=nil{
 		return err
 	}
+	logTestSuite.Debugf("Execution Summary")
+	for _,executionList := range executorSuiteConfig.executionLists {
+		for _,entry := range executionList.Entries {
+			logTestSuite.WithFields(log.Fields{
+				"executionList":executionList.Name,
+				"entry":entry}).
+				Debugf("Execution Entry %s",entry)
+		}
+
+	}
+
 	logTestSuiteExecution = logTestSuite.WithField("executionID",executorSuiteConfig.executionID)
 	logTestSuiteExecution.Info("Test placed")
 	if err := t.waitUntilCompletion(timeoutContext, executorSuiteConfig); err != nil {
@@ -315,6 +332,7 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 		return fmt.Errorf(executionResponse.Error)
 	}
 	testExecutorConfig.executionID = executionResponse.ExecutionID
+	testExecutorConfig.executionLists = executionResponse.ExecutionLists
 	return nil
 }
 
