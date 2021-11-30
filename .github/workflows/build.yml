@@ -59,7 +59,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: tosca-installer
-          key: tosca-setup-${{steps.cache-key.outputs.result}}
+          key: tosca-setup-${{ needs.build_tosca_server.outputs.cacheKey }}
       - uses: actions/download-artifact@v2
         name: Download toscactl
         with:
@@ -154,6 +154,8 @@ jobs:
   build_tosca_server:
     runs-on: [windows-2019]
     needs: [precheck]
+    outputs:
+      cacheKey: ${{steps.cache-key.outputs.result}}
     strategy:
       matrix:
         goos: [windows]
