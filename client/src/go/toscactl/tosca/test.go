@@ -133,15 +133,17 @@ func LoadTestSuiteConfiguration(testSuitePath string,name string) (testSuite *Te
 
 
 
-
+var logTestSuite *log.Entry
+var logTestSuiteExecution *log.Entry
 func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.Context) ( err error) {
-	log.Infof("Preparing to execute Test Suite %s",suiteConfig.Name)
+	logTestSuite=log.WithField("testSuite",suiteConfig.Name)
+	logTestSuite.Info("Preparing to execute Test Suite")
 	timeoutContext,_:=context.WithTimeout(ctx,suiteConfig.TestSuite.Timeout*time.Minute)
 
 	buildDirPath :=path.Join(t.config.WorkingDir, suiteConfig.ResultFolder,suiteConfig.Name)
 	_, err = os.Stat(buildDirPath)
 	if !os.IsNotExist(err) {
-		log.Warnf("Build directory %s is not empty, deleting...",buildDirPath)
+		logTestSuite.Warnf("Build directory %s is not empty, deleting...",buildDirPath)
 		if err:=os.RemoveAll(buildDirPath);err!=nil{
 			return err
 		}
@@ -169,8 +171,8 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 	}else{
  		executorSuiteConfig.hostname=suiteConfig.Agent.Hostname
 	}
-	log.Infof("Selected Node %s",suiteConfig.Agent.Hostname)
-	log.Infof("Preparing Workspace...")
+	logTestSuite.Infof("Selected Node %s",suiteConfig.Agent.Hostname)
+	logTestSuite.Infof("Preparing Workspace...")
 
 	executorSuiteConfig.load(suiteConfig)
 	executorSuiteConfig.workspace,err=t.prepareWorkspace(suiteConfig,timeoutContext)
@@ -182,45 +184,47 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		return err
 	}
 	defer func(){
-		log.Infof("Deleting Workspace")
+		logTestSuite.Infof("Deleting Workspace")
 		if err2:=t.DeleteWorkspace(executorSuiteConfig,context.Background());err2!=nil{
 			err=fmt.Errorf("error when deleting workspace: please remove it by hand, %v",err2)
 		}
 	}()
-	log.Infof("Workspace %s ready", executorSuiteConfig.workspace.SessionID)
+	logTestSuite.Infof("Workspace %s ready", executorSuiteConfig.workspace.SessionID)
 
-	log.Infof("Requesting Test %s on workspace %s",suiteConfig.Name,executorSuiteConfig.workspace.SessionID)
+	logTestSuite.Infof("Requesting Test %s on workspace %s",suiteConfig.Name,executorSuiteConfig.workspace.SessionID)
 	if err := t.requestTestExecution(executorSuiteConfig, timeoutContext);err!=nil{
 		return err
 	}
-
-	log.Infof("Test %s placed(%s) on workspace %s", suiteConfig.Name, executorSuiteConfig.executionID, executorSuiteConfig.workspace.SessionID)
+	logTestSuiteExecution = logTestSuite.WithField("executionID",executorSuiteConfig.executionID)
+	logTestSuiteExecution.Info("Test placed")
 	if err := t.waitUntilCompletion(timeoutContext, executorSuiteConfig); err != nil {
 		return err
 	}
 
-	log.Infof("Test %s completed",suiteConfig.Name)
-	log.Infof("Downloading xunit results")
-	testReports,err := t.getTestReports(executorSuiteConfig,timeoutContext)
-	if err != nil {
-		return err
+	logTestSuiteExecution.Infof("Test %s completed",suiteConfig.Name)
+	logTestSuiteExecution.Infof("Downloading xunit results")
+	testReports,errTestReport := t.getTestReports(executorSuiteConfig,timeoutContext)
+	logTestSuiteExecution.Infof("Downloading artifacts")
+	_,errArtifacts := t.getArtifacts(executorSuiteConfig,timeoutContext)
+	logTestSuiteExecution.Infof("Downloading Reports")
+	_,errReports := t.getReports(executorSuiteConfig,timeoutContext)
+	if errTestReport != nil {
+		return errTestReport
+	}
+	if errArtifacts != nil {
+		return errArtifacts
+	}
+	if errReports != nil {
+		return errReports
 	}
 
-	log.Infof("Downloading Reports")
-	_,err = t.getReports(executorSuiteConfig,timeoutContext)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Downloading artifacts")
-	_,err = t.getArtifacts(executorSuiteConfig,timeoutContext)
-	if err != nil {
-		return err
-	}
 	failedTests := testReports.GetNumberFailedTests()
 	testsWithErrors := testReports.GetNumberErrorsTests()
 	totalTests :=testReports.GetNumberTests()
-	log.Infof("Test Suite %s %d test failed, %d tests with errors, %d tests executed, results saved on %s",suiteConfig.Name,failedTests,testsWithErrors,totalTests,executorSuiteConfig.buildDirectory)
+	logTestSuiteExecution.Infof("%d test failed",failedTests)
+	logTestSuiteExecution.Infof("%d tests with errors",testsWithErrors)
+	logTestSuiteExecution.Infof("%d tests executed",totalTests)
+	logTestSuiteExecution.Infof("results saved on %s",executorSuiteConfig.buildDirectory)
 	if testReports.GetNumberFailedTests() > 0 {
 		return TestsFailed
 	}
@@ -232,7 +236,7 @@ func (t *Provider) requestTestExecution(executorSuiteConfig *TestExecutorConfigu
 		return t.triggerExecution(executorSuiteConfig, timeoutContext)
 	}, retry.RetryIf(func(err error) bool {
 		if errors.Is(err,AlreadyRunningExecution) {
-			log.Warn("other execution still running, waiting for agent being free")
+			logTestSuiteExecution.Warn("other execution still running, waiting for agent being free")
 			return true
 		}
 		return false
@@ -247,14 +251,14 @@ func (t *Provider) waitUntilCompletion(ctx context.Context, executorSuiteConfig 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Warnf("Canceling Test execution %s",executorSuiteConfig.executionID)
+			logTestSuiteExecution.Warnf("Canceling Test execution %s",executorSuiteConfig.executionID)
 			if err:=t.cancelTestExecution(executorSuiteConfig);err!=nil{
 				return err
 			}
 			return ctx.Err()
 		case <-time.After(15 * time.Second):
 			status, err := t.checkStatus(executorSuiteConfig, ctx)
-			log.Infof("Execution %s is in %s state", executorSuiteConfig.executionID, status)
+			logTestSuiteExecution.Infof("%s state",  status)
 
 			switch status {
 			case executionCompleted:
@@ -369,9 +373,9 @@ func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,u
 	if executionResponse.Error !=""{
 		return nil,fmt.Errorf(executionResponse.Error)
 	}
-	log.Infof("%d files found",len(executionResponse.Files))
+	logTestSuite.Infof("%d files found",len(executionResponse.Files))
 	for _,file := range executionResponse.Files {
-		log.Infof("Downloading %s",file.Path)
+		logTestSuite.WithField("file",file.Path).Info("Downloading...")
 		downloadURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urldownload,testExecutorConfig.executionID,file.Id))
 		if err!=nil{
 			return nil,err

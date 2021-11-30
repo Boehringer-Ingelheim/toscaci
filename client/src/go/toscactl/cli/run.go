@@ -38,6 +38,7 @@ var (
 	testSuiteSelectorsFlag = entity.KeyValue{}
 	parametersFlag         = entity.KeyValue{}
 	agentSelectorsFlag     = entity.KeyValue{}
+    exitCode=success
 	agentHostname string
 	runCmd                 = &cobra.Command{
 		Use:   "run [agent selectors] [suite selector] [suite parameters] [testSuite]",
@@ -58,13 +59,13 @@ var (
 			if err!=nil{
 				log.Panic(err)
 			}
-			var testSuitesErrors []TestSuiteError
+
 			for _, testSuiteName := range testSuites {
 				//Read parameter file
 				testSuitePath:=path.Join(appConfig.WorkingDir,fmt.Sprintf("tosca-%s.json", testSuiteName))
 				testSuiteConfig,err := tosca.LoadTestSuiteConfiguration(testSuitePath,testSuiteName)
 				if err!=nil{
-					testSuitesErrors = append(testSuitesErrors,TestSuiteError{
+					testSuiteErrLog(TestSuiteError{
 						err:           fmt.Errorf("error when preparing Test execution %s: %w",testSuiteName,ConfigError{err:err}),
 						testSuiteName: testSuiteName,
 					})
@@ -108,7 +109,7 @@ var (
 				testSuiteConfig.TestSuite.Reports.AddAll(reportsFlag)
 
 				if err=testSuiteConfig.Validate();err!=nil{
-					testSuitesErrors = append(testSuitesErrors,TestSuiteError{
+					testSuiteErrLog(TestSuiteError{
 						err:           fmt.Errorf("wrong configuration on %s: %w",testSuiteName,ConfigError{err:err}),
 						testSuiteName: testSuiteName,
 					})
@@ -116,42 +117,10 @@ var (
 				}
 
 				if err=toscaProvider.RunTestSuite(*testSuiteConfig,cmd.Context());err!=nil{
-					testSuitesErrors = append(testSuitesErrors,TestSuiteError{
+					testSuiteErrLog(TestSuiteError{
 						err:           err,
 						testSuiteName: testSuiteName,
 					})
-					continue
-				}
-			}
-
-
-			var exitCode=success
-			for _,testSuiteErr:=range testSuitesErrors{
-				if errors.Is(testSuiteErr.err,tosca.TestsFailed) {
-					log.Warnf("Some Tests has failed on TestSuite:%s", testSuiteErr.testSuiteName)
-					if exitCode<failedTests {
-						exitCode=failedTests
-					}
-				}else if errors.Is(testSuiteErr.err, context.Canceled) {
-					log.Errorf("Test %s graceful canceled",testSuiteErr.testSuiteName)
-					if exitCode<canceled {
-						exitCode=canceled
-					}
-				}else if  errors.Is(testSuiteErr.err, context.DeadlineExceeded){
-					log.Errorf("Test %s canceled due timeout",testSuiteErr.testSuiteName)
-					if exitCode<canceled {
-						exitCode=canceled
-					}
-				}else if  errors.Is(testSuiteErr.err, ConfigError{}){
-					log.Errorf("Config error on TestSuite %s, %v",testSuiteErr.testSuiteName,testSuiteErr.err)
-					if exitCode<configIssue {
-						exitCode=configIssue
-					}
-				}else{
-					log.Errorf("Unknown Error when executing TestSuite %s, error: %v", testSuiteErr.testSuiteName,testSuiteErr.err)
-					if exitCode<unknownError {
-						exitCode=unknownError
-					}
 				}
 			}
 
@@ -159,6 +128,31 @@ var (
 		},
 	}
 )
+
+func testSuiteErrLog(testSuiteErr TestSuiteError) {
+	suiteLog:=log.WithField("testSuite",testSuiteErr.testSuiteName).WithError(testSuiteErr.err)
+	ec :=0
+	if errors.Is(testSuiteErr.err, tosca.TestsFailed) {
+		suiteLog.Warnf("Some Tests has failed on TestSuite:%s", testSuiteErr.testSuiteName)
+		ec = failedTests
+
+	} else if errors.Is(testSuiteErr.err, context.Canceled) {
+		suiteLog.Errorf("Test %s graceful canceled", testSuiteErr.testSuiteName)
+			ec = canceled
+	} else if errors.Is(testSuiteErr.err, context.DeadlineExceeded) {
+		suiteLog.Errorf("Test %s canceled due timeout", testSuiteErr.testSuiteName)
+			ec = canceled
+	} else if errors.Is(testSuiteErr.err, ConfigError{}) {
+		suiteLog.Errorf("Config error on TestSuite %s", testSuiteErr.testSuiteName)
+			ec = configIssue
+	} else {
+		suiteLog.Errorf("Unknown Error when executing TestSuite %s", testSuiteErr.testSuiteName)
+			ec = unknownError
+	}
+	if ec > exitCode {
+		exitCode=ec
+	}
+}
 
 func init() {
 	RootCmd.AddCommand(runCmd)
