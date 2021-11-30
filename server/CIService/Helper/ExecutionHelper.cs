@@ -13,6 +13,7 @@ using Tricentis.Automation.Contract;
 using Tricentis.Common.Security.O_CF_NR;
 using Tricentis.TCAPIObjects.DataObjects;
 using Tricentis.TCAPIObjects.Objects;
+using ExecutionList = Tricentis.TCAPIObjects.Objects.ExecutionList;
 
 namespace CIService.Helper
 {

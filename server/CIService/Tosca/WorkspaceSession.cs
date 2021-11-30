@@ -55,10 +55,14 @@ namespace CIService.Tosca
         {
             List<string> searchParams = executionFilter.Select(p => $"{p.key}==\"{p.value}\"").ToList();
             string searchFilter = string.Join(" AND ", searchParams);         
-            List<TCObject> executionLists = workspace.GetProject().Search($"=>SUBPARTS:ExecutionList[{searchFilter}]");
-            return executionLists;
-            
-        }   
+            return SearchFor($"=>SUBPARTS:ExecutionList[{searchFilter}]");            
+        }
+
+        public List<TCObject> SearchFor(String tql)
+        {
+            List<TCObject> tCObjects = workspace.GetProject().Search(tql);
+            return tCObjects;
+        }
 
         public void Dispose()
         {
