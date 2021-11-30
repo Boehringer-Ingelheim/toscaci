@@ -61,7 +61,7 @@ namespace CIService.Controllers
                         var tql = String.Format("->PROJECT->SUBPARTS:TCFolder[(Name=?\"{0}\")]->SUBPARTS:ReportDefinition[(Name=?\"{1}\")]", "Reporting", report);
                         if (session.SearchFor(tql).Count() == 0)
                         {
-                            return CreateErrorResponseMessage(HttpStatusCode.BadRequest, String.Format("Report {0} does not exists or it's not in the root Reporting folder", report));
+                            return CreateErrorResponseMessage(HttpStatusCode.BadRequest, String.Format("Report {0} does not exists or it's not in the root Reporting folder, please check https://documentation.tricentis.com/tosca/1300/en/content/reporting/print_report.htm for more details", report));
                         }
 
                     }
