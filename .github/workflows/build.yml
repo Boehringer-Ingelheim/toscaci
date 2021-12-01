@@ -112,7 +112,9 @@ jobs:
         uses: mikepenz/action-junit-report@v2
         with:
           report_paths: 'e2e/build/test/**/junit/*.xml'
+          check_name: End to end tests
           fail_on_failure: true
+          token: ${{ secrets.GITHUB_TOKEN }}
           require_tests: true
 
 
