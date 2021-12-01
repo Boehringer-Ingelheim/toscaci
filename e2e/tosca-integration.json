@@ -4,7 +4,7 @@
   },
   "testSuite": {
     "selectors": {
-      "TestType":"acceptance"      
+      "TestType":"integration"      
     },
     "reports":["ToscaIntegrationReport"]
   }  
