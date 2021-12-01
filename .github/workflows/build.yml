@@ -100,8 +100,12 @@ jobs:
           Start-Process '.\toscaci-service\CIService.exe'
           sleep 2
           
+          echo "Install Chrome Profile"
+          cd e2e
+          Expand-Archive chromeProfile\ToscaProfile.zip -DestinationPath "$env:LOCALAPPDATA\Google\Chrome\User Data"
+
           echo "Run toscactl"
-          cd e2e            
+          
           ..\cli\toscactl-windows-amd64.exe run acceptance installation integration
       - name: 'Archive E2E results'
         uses: actions/upload-artifact@v2
