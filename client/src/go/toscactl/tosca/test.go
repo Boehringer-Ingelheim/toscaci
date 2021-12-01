@@ -253,7 +253,7 @@ func (t *Provider) requestTestExecution(executorSuiteConfig *TestExecutorConfigu
 		return t.triggerExecution(executorSuiteConfig, timeoutContext)
 	}, retry.RetryIf(func(err error) bool {
 		if errors.Is(err,AlreadyRunningExecution) {
-			logTestSuiteExecution.Warn("other execution still running, waiting for agent being free")
+			logTestSuite.Warn("other execution still running, waiting for agent being free")
 			return true
 		}
 		return false
