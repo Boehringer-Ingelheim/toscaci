@@ -106,7 +106,7 @@ jobs:
 
           echo "Run toscactl"
           
-          ..\cli\toscactl-windows-amd64.exe run acceptance installation integration --suite-parameter CHROME_PATH="$Env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+          ..\cli\toscactl-windows-amd64.exe run acceptance installation integration
       - name: 'Archive E2E results'
         uses: actions/upload-artifact@v2
         with:
