@@ -75,18 +75,20 @@ namespace CIService.Helper
                 executionTracking.AddExecution(testSuiteExecution);
                 try {
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
-                    {
-                        ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;
+                    {                       
+                        ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;                        
                         testSuiteExecution.executionPath = Path.Combine(executionTracking.executionDirectory, executionList.UniqueId);
                         testSuiteExecution.executionListName = executionList.DisplayedName;
-                        testSuiteExecution.aOFilePath = Path.Combine(testSuiteExecution.executionPath, testSuiteExecution.executionListName + ".tas");
-                        //executionList.WriteAutomationObjects(testSuiteExecution.executionPath, "false", "false");
-                        Directory.CreateDirectory(testSuiteExecution.executionPath);
-                        executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);                        
+                        testSuiteExecution.aOFilePath = Path.Combine(testSuiteExecution.executionPath, testSuiteExecution.executionListName + ".tas");                        
+                        Directory.CreateDirectory(testSuiteExecution.executionPath);                        
                         testSuiteExecution.aOResultFilePath = Path.Combine(testSuiteExecution.executionPath, "result_" + Path.GetFileName(testSuiteExecution.aOFilePath));
+                        OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath,executionList,  executionTracking.artifactPath, executionTracking.request.TestParameters);
+                        session.Save();
+                        //executionList.WriteAutomationObjects(testSuiteExecution.executionPath, "false", "false");
+                        executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);
                     }                    
                 
-                    OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath, executionTracking.artifactPath, executionTracking.request.TestParameters);
+                    
                     AgentProcess = new Process
                     {
                         StartInfo = new ProcessStartInfo
@@ -177,41 +179,20 @@ namespace CIService.Helper
             executionList.PrintReport(reportName, Path.Combine(reportPath, executionList.DisplayedName + "_" + reportName + ".pdf"));                                    
         }
 
-        public static void OverrideTcpsWithTestParameters(string AOFilePath, String artifactPath, List<KeyValue> testParameters)
-        {            
-            List<ExecutionTask> executionTasks = AutomationObjectsSerializer.FromFile<List<ExecutionTask>>(AOFilePath, CommonCrypto.Instance.CreateDecryptStream);
-           
-            List<KeyValuePair<string, string>> testParams = testParameters.Select(t => new KeyValuePair<string, string>(t.key, t.value)).ToList();
-            if (!testParams.Select(p=>p.Key).Contains(ARTIFACTS_PATH_NAME))
-            {                
-                testParams.Add(new KeyValuePair<string, string>(ARTIFACTS_PATH_NAME, artifactPath));
-            }
-
-            List<string> testParamKeys = testParams.Select(t => t.Key).ToList();            
-
-            List<KeyValuePair<string, string>> existingTcps = executionTasks.FirstOrDefault().TestConfiguration.ToList();
-            List<KeyValuePair<string, string>> newTcps = new List<KeyValuePair<string, string>>();
-
-            foreach (KeyValuePair<string, string> existingTcp in existingTcps)
+        public static void OverrideTcpsWithTestParameters(string AOFilePath,ExecutionList executionList,  String artifactPath, List<KeyValue> testParameters)
+        {
+            if (!testParameters.Select(p => p.key).Contains(ARTIFACTS_PATH_NAME))
             {
-                if (testParamKeys.Contains(existingTcp.Key)) // if the TCP is defined in the JSON env data, override the TCP with the test param
-                {
-                    string envDataValue = testParams.FirstOrDefault(p => p.Key == existingTcp.Key).Value;
-                    KeyValuePair<string, string> overriddenTcp = new KeyValuePair<string, string>(existingTcp.Key, envDataValue);
-                    newTcps.Add(overriddenTcp);
-                }
-                else
-                {
-                    newTcps.Add(existingTcp); // if not overridden, just copy over the existing TCP into the new TCP list
-                }
+                KeyValue artifactKV = new KeyValue();
+                artifactKV.key = ARTIFACTS_PATH_NAME;
+                artifactKV.value = artifactPath;
+                testParameters.Add(artifactKV);
+                
             }
-            List<string> tcpKeys = existingTcps.Select(p => p.Key).ToList();
-            List<KeyValuePair<string, string>> extraTestParams = testParams.Where(p => !tcpKeys.Contains(p.Key)).ToList();
-            newTcps.AddRange(extraTestParams);
-
-            executionTasks.FirstOrDefault().TestConfiguration = newTcps;
-            File.Delete(AOFilePath);
-            AutomationObjectsSerializer.ToFile(AOFilePath, executionTasks, CommonCrypto.Instance.CreateEncryptStream);
+            foreach(KeyValue kv in testParameters)
+            {
+                TestConfigurationHelper.SetTestConfigurationParameterValue(executionList, kv.key, kv.value);
+            }            
         }
 
         private static void CopyFilesRecursively(string sourcePath, string targetPath)

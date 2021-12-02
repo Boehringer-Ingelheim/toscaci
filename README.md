@@ -14,6 +14,8 @@ Tosca CLI tool and a rest API service that improve the interaction between CI To
 - Development
   - [CLI tool](./client/README.md)
   - [CIService](./server/Readme.md)
+- Known Issues
+  - [Usage Issues](#Usage-Issues)
 
 
 ## History
@@ -71,6 +73,7 @@ A test suite is defined creating a file with the given format: ```tosca-<suiteNa
       "TestType": "installation",
       "TestBranch": "master"
     },
+    "timeout": 120,
     "reports": [ "ToscaIntegrationReport","myOtherReport" ]
   }
 }
@@ -79,6 +82,7 @@ A test suite is defined creating a file with the given format: ```tosca-<suiteNa
 |---|---|---|
 | agent.hostname  | http://url:8080  |  this parameter indicates to which tosca ciservice node tests will be executed |
 | testSuite.parameters | "myparam":"myvalue"  | you can inject runtime parameters that will be seen as config parameters in tosca, typical usage is for URL of application under test. |
+| testSuite.timeout | 120 | Max time allowed for the test suite complete, this timeout includes wait for node being free, value count in minutes.
 | testSuite.selectors | "mySelector":"myValue" | you can filter which execution lists will be triggered as part of your testSuite execution |
 | testSuite.reports | "myToscaReport" | Name of the tosca report design to execute to render a report in PDF |
 
@@ -125,3 +129,6 @@ To install CIService you need to follow the following steps:
 6. In addition, enable a Windows user autologon on startup.
 
 Unfortunately, tosca requires full UI interaction. Because of this it cannot be run as a Windows service.
+
+## Usage Issues
+Depending of the Windows Security Policies could be that the CIAddin.dll is not properly loaded, ensure the DLL is not blocked, otherwise the custom Addin won't be loaded on Tosca Commander and make the CIService fails.
