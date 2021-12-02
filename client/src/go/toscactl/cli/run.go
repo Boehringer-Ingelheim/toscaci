@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path"
 	"toscactl/entity"
+	"toscactl/helper"
 	"toscactl/tosca"
 )
 const(
@@ -96,14 +97,33 @@ var (
 					testSuiteConfig.TestSuite.Parameters.Set("JENKINS_JOB_URL="+value)
 				}
 				
-				//Inject git vars if available				
-				out, err := exec.Command("git", "config", "--get", "remote.origin.url").Output()
-				if err == nil  && len(out) > 0 {
-					testSuiteConfig.TestSuite.Parameters.Set("GIT_REPO_URL="+string(out))
-				}
-				out, err = exec.Command("git", "rev-parse", "--HEAD").Output()
-				if err == nil  && len(out) > 0 {
-					testSuiteConfig.TestSuite.Parameters.Set("GIT_REF="+string(out))
+				//Inject git vars if available
+
+				if _, exists := exec.LookPath("git"); exists==nil{
+					out, err := helper.ExecuteProcess(exec.Command("git", "config", "--get", "remote.origin.url"),appConfig.WorkingDir)
+					if err == nil  && len(out) > 0 {
+						testSuiteConfig.TestSuite.Parameters.Set("GIT_REPO_URL="+string(out))
+					}
+					out, err = helper.ExecuteProcess(exec.Command("git", "rev-parse", "HEAD"),appConfig.WorkingDir)
+					if err == nil  && len(out) > 0 {
+						testSuiteConfig.TestSuite.Parameters.Set("GIT_REF="+string(out))
+					}
+
+					out, err = helper.ExecuteProcess(exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD"),appConfig.WorkingDir)
+					if err == nil  && len(out) > 0 {
+						testSuiteConfig.TestSuite.Parameters.Set("GIT_BRANCH="+string(out))
+					}
+
+					out, err = helper.ExecuteProcess(exec.Command("git", "log", "-1", "--pretty=format:%an"),appConfig.WorkingDir)
+					if err == nil  && len(out) > 0 {
+						testSuiteConfig.TestSuite.Parameters.Set("GIT_AUTHOR="+string(out))
+					}
+					out, err = helper.ExecuteProcess(exec.Command("git", "log", "-1", "--pretty=format:%ci"),appConfig.WorkingDir)
+					if err == nil  && len(out) > 0 {
+						testSuiteConfig.TestSuite.Parameters.Set("GIT_DATE="+string(out))
+					}
+				}else{
+					log.Warn("git command not found in $PATH, in case you are running from a git repository we can't inject git parameters to tosca")
 				}
 
 				testSuiteConfig.TestSuite.Reports.AddAll(reportsFlag)
