@@ -6,6 +6,7 @@
     "selectors": {
       "TestType":"integration"      
     },
+    "videoRecord": true,
     "reports":["ToscaIntegrationReport"]
   }  
 }

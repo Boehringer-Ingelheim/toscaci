@@ -20,5 +20,8 @@ namespace CIService.Contract
         public List<KeyValue> ExecutionFilter { get; set; }
         [JsonProperty("reports")]
         public List<String> Reports { get; set; }
+
+        [JsonProperty("videoRecord")]
+        public bool VideoRecord { get; set; }
     }
 }

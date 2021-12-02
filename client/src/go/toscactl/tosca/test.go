@@ -59,6 +59,7 @@ type TestExecutorConfiguration struct {
 	Selectors          []KeyValue `json:"selectors,omitempty"`
 	Parameters         []KeyValue `json:"parameters,omitempty"`
 	Reports            []string   `json:"reports,omitempty"`
+	VideoRecord        bool       `json:"videoRecord,omitempty"`
 	buildDirectory     string     `json:"-"`
 	xUnitPath          string     `json:"-"`
 	artifactsPath      string     `json:"-"`
@@ -103,6 +104,8 @@ func (c *TestExecutorConfiguration) load(config TestSuiteConfiguration) {
 	for _,report := range  config.TestSuite.Reports {
 		c.Reports = append(c.Reports,report)
 	}
+
+	c.VideoRecord = config.TestSuite.VideoRecord
 }
 
 // LoadTestSuiteConfiguration expect a testSuiteName file with format tosca-{testSuiteName}.json on workingDir
@@ -119,6 +122,7 @@ func LoadTestSuiteConfiguration(testSuitePath string,name string) (testSuite *Te
 			Parameters: entity.KeyValue{},
 			Selectors:  entity.KeyValue{},
 			Timeout:    defaultTimeout,
+			VideoRecord: true,
 		},
 	}
 
