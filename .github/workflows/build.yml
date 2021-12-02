@@ -100,20 +100,56 @@ jobs:
           Start-Process '.\toscaci-service\CIService.exe'
           sleep 2
           
+          echo "Install Chrome Profile"
+          $KeyPath = "HKLM:\Software\Policies\Google\Chrome\ExtensionInstallForcelist"
+          $KeyName = "1"
+          $KeyType = "String"          
+          $KeyValue = "njjjlolnnicemgigahffncnddbioccpo;https://clients2.google.com/service/update2/crx"
+
+          #Verify if the registry path already exists
+          if(!(Test-Path $KeyPath)) {
+              try {
+                  #Create registry path
+                  New-Item -Path $KeyPath -ItemType RegistryKey -Force -ErrorAction Stop
+              }
+              catch {
+                  Write-Output "FAILED to create the registry path"
+              }
+          }
+          #Verify if the registry key already exists
+          if(!((Get-ItemProperty $KeyPath).$KeyName)) {
+              try {
+                  #Create registry key 
+                  New-ItemProperty -Path $KeyPath -Name $KeyName -PropertyType $KeyType -Value $KeyValue
+              }
+              catch {
+                  Write-Output "FAILED to create the registry key"
+              }
+          }
+          Start-Process "$env:PROGRAMFILES/Google/Chrome/Application/chrome.exe"
+          sleep 10
+          taskkill /f /im chrome.exe
+          
+          
+          echo "Execute E2E"
+          cd e2e
           echo "Run toscactl"
-          cd e2e            
-          ..\cli\toscactl-windows-amd64.exe run acceptance
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v2
-        with:
-          report_paths: 'e2e/build/test/acceptance/junit/*.xml'
-          fail_on_failure: true
-          require_tests: true
+          
+          ..\cli\toscactl-windows-amd64.exe run acceptance installation integration
       - name: 'Archive E2E results'
         uses: actions/upload-artifact@v2
         with:
           name: e2e-results_${{ needs.precheck.outputs.full_version }}
           path: e2e/build/test/
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: 'e2e/build/test/**/junit/*.xml'
+          check_name: End to end tests
+          fail_on_failure: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          require_tests: true
+
 
           
   build_toscactl:
@@ -189,7 +225,7 @@ jobs:
         shell: cmd
         run: |
            nuget restore
-           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
+           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
       - name: Package
         working-directory: server
         run: |
