@@ -126,6 +126,10 @@ jobs:
                   Write-Output "FAILED to create the registry key"
               }
           }
+          Start-Process "$env:PROGRAMFILES/Google/Chrome/Application/chrome.exe"
+          sleep 10
+          taskkill /f /im chrome.exe
+          
           
           echo "Execute E2E"
           cd e2e
