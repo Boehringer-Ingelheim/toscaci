@@ -3,6 +3,7 @@ package helper
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 )
 
 func DownloadFile(url string , targetFilePath string,ctx context.Context) error {
+	log.Debugf("Download %s on %s",url,targetFilePath)
 	if err:=os.MkdirAll(path.Dir(targetFilePath),os.ModePerm);err!=nil{
 		return err
 	}

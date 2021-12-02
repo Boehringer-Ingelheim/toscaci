@@ -40,6 +40,8 @@ func (t *Provider) DeleteWorkspace(testExecutorConfig *TestExecutorConfiguration
 	if err != nil {
 		return err
 	}
+
+	logTestSuite.Debugf("Delete workspace: %s",deleteWorkspaceURL)
 	req, err := http.NewRequestWithContext(ctx, "DELETE", deleteWorkspaceURL, nil)
 	if err != nil {
 		return err
@@ -71,7 +73,7 @@ func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,hostU
 	if err:=checkProjectRequest(createProjectRequest);err!=nil{
 		return nil,err
 	}
-
+	logTestSuite.Debugf("Create Project Payload: %+v",createProjectRequest)
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	if err:=multipartField(writer,"name",createProjectRequest.Name);err!=nil{
