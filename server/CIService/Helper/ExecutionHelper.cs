@@ -4,9 +4,11 @@ using CIService.Service;
 using CIService.Tosca;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using Tricentis.Automation.Contract;
@@ -43,8 +45,7 @@ namespace CIService.Helper
         }
 
         public static void RunExecution(ExecutionTracking executionTracking, List<String> executionListIDs)
-        {
-            Process AgentProcess = null;
+        {            
             try
             {
                 var workspacePath = Encoding.UTF8.GetString(Convert.FromBase64String(executionTracking.request.sessionID));
@@ -86,49 +87,30 @@ namespace CIService.Helper
                         session.Save();
                         //executionList.WriteAutomationObjects(testSuiteExecution.executionPath, "false", "false");
                         executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);
-                    }                    
-                
-                    
-                    AgentProcess = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE),
-                            Arguments = " 12342 Slim " + testSuiteExecution.aOFilePath, // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
-                            UseShellExecute = false,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            RedirectStandardInput = true,
-                            CreateNoWindow = false,
-                            WorkingDirectory = TBOX_HOME_DIRECTORY,                                                       
-                        }
-                    };
-                    
+                    }
 
-
-                    AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
+                    if (executionTracking.request.VideoRecord)
                     {
-                        Console.WriteLine(e.Data);
-                    });
-                    AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
-                    {
-                        Console.WriteLine(e.Data);
-                    });
-                    AgentProcess.Start();
-                    AgentProcess.BeginOutputReadLine();
-                    AgentProcess.BeginErrorReadLine();
+                        String ffmpegPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "ffmpeg.exe");
+                        String ffmpegArgs = ConfigurationManager.AppSettings["ffmpegArgs"];                        
+                        testSuiteExecution.videoRecordProcess = ExecuteProcess(ffmpegPath, executionTracking.artifactPath, String.Format("{0} {1}",ffmpegArgs, "video_evidence.mp4"));
+                    }
 
-                    testSuiteExecution.tboxProcess = AgentProcess;
-                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);                    
-                    AgentProcess.WaitForExit();
+                    // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
+                    testSuiteExecution.tboxProcess = ExecuteProcess(Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE), TBOX_HOME_DIRECTORY,String.Format(" 12342 SlimAgent {0}",testSuiteExecution.aOFilePath));
+                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);
+                    testSuiteExecution.tboxProcess.WaitForExit();
+                    //ExecuteProcess("taskkill", ".", String.Format("/PID {0}", testSuiteExecution.videoRecordProcess.Id)).WaitForExit();
+                    testSuiteExecution.videoRecordProcess.StandardInput.Write("q");
+                    testSuiteExecution.videoRecordProcess.WaitForExit();
                     if (executionTracking.cancel)
                     {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
                         return;
                     }
-                    if (AgentProcess.ExitCode != 0)
+                    if (testSuiteExecution.tboxProcess.ExitCode != 0)
                     {
-                        throw new ApplicationException("TBOX Failed with exit code:" + AgentProcess.ExitCode);
+                        throw new ApplicationException("TBOX Failed with exit code:" + testSuiteExecution.tboxProcess.ExitCode);
                     }
                     //Copy xunit file  generated with tbox to delivery folder, as the name is based on executionList display name, we need to randomize name to avoid file overwritting
                     String xunitFileExecutionPath = Path.Combine(testSuiteExecution.executionPath, "junit_result_" + testSuiteExecution.executionListName + ".xml");
@@ -222,6 +204,38 @@ namespace CIService.Helper
                 tcTaskParams.AddParam("AOResultFilePath", AOResultFile);
                 session.GetWorkspace().GetProject().ExecuteTask("CIAddin.Tasks.ImportAutomationObjectResultsToExecutionLogTask", tcTaskParams);                          
                 //session.GetWorkspace().GetProject().ImportAOResults(AOResultFile);
+        }
+        private static Process ExecuteProcess(String fileName,String workingDir,String arguments)
+        {
+            Process AgentProcess = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = fileName,
+                    Arguments = arguments, // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    CreateNoWindow = false,
+                    WorkingDirectory = workingDir                    
+                }
+            };
+
+
+
+            AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
+            {
+                Console.WriteLine(e.Data);
+            });
+            AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
+            {
+                Console.WriteLine(e.Data);
+            });
+            AgentProcess.Start();
+            AgentProcess.BeginOutputReadLine();
+            AgentProcess.BeginErrorReadLine();
+            return AgentProcess;
         }
     }
 }

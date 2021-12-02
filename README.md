@@ -74,6 +74,7 @@ A test suite is defined creating a file with the given format: ```tosca-<suiteNa
       "TestBranch": "master"
     },
     "timeout": 120,
+    "videoRecord": true,
     "reports": [ "ToscaIntegrationReport","myOtherReport" ]
   }
 }
@@ -82,7 +83,8 @@ A test suite is defined creating a file with the given format: ```tosca-<suiteNa
 |---|---|---|
 | agent.hostname  | http://url:8080  |  this parameter indicates to which tosca ciservice node tests will be executed |
 | testSuite.parameters | "myparam":"myvalue"  | you can inject runtime parameters that will be seen as config parameters in tosca, typical usage is for URL of application under test. |
-| testSuite.timeout | 120 | Max time allowed for the test suite complete, this timeout includes wait for node being free, value count in minutes.
+| testSuite.timeout | 120 | Max time allowed for the test suite complete, this timeout includes wait for node being free, value count in minutes. |
+| testSuite.videoRecord | true | A video of the agent screen will be recorded, archived as artifact. |
 | testSuite.selectors | "mySelector":"myValue" | you can filter which execution lists will be triggered as part of your testSuite execution |
 | testSuite.reports | "myToscaReport" | Name of the tosca report design to execute to render a report in PDF |
 

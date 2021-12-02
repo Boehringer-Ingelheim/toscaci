@@ -36,6 +36,7 @@ type TestExecutionConfiguration struct {
 	Selectors  entity.KeyValue    //Key Value to filter which tests to execute based on Tosca Properties on an execution List
 	Reports    entity.StringArray //Reports to generate
 	Timeout    time.Duration      //time in Minutes to allow triggerExecution to run until mark it as failed
+	VideoRecord bool
 }
 
 // Validate TestSuiteConfiguration values are correct.

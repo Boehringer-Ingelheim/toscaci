@@ -226,11 +226,17 @@ jobs:
         run: |
            nuget restore
            "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
-      - name: Package
+      - name: Package Tosca Commander Addon
         working-directory: server
         run: |
            mkdir build
            Compress-Archive -Path CIAddin\bin\Release\* -DestinationPath build\toscacommander-addon-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+      - name: Package Tosca CIService
+        working-directory: server
+        run: |
+           Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/ffmpeg-git-essentials.7z" -UseBasicParsing -OutFile ffmpeg.7z
+           7z x ffmpeg.7z
+           cp ffmpeg*\bin\ffmpeg.exe CIService\bin\Release\ffmpeg.exe
            Compress-Archive -Path CIService\bin\Release\* -DestinationPath build\toscaci-service-${{ matrix.goos }}-${{ matrix.goarch }}.zip
       - name: 'Archive Debug Tosca Commander Addon'
         uses: actions/upload-artifact@v2

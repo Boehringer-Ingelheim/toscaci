@@ -15,6 +15,7 @@ namespace CIService.Contract
         public string executionPath { get; set; }
 
         public Process tboxProcess { get; set; }
+        public Process videoRecordProcess { get; set; }
         public string aOFilePath { get; set; }
         public string aOResultFilePath { get; set; }
 
@@ -29,6 +30,17 @@ namespace CIService.Contract
                 {
                     tboxProcess.Kill();
                     tboxProcess.WaitForExit();
+                }
+            }
+            catch
+            {
+            }
+            try
+            {
+                if (videoRecordProcess != null)
+                {
+                    videoRecordProcess.Kill();
+                    videoRecordProcess.WaitForExit();
                 }
             }
             catch
