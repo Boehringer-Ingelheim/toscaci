@@ -100,9 +100,11 @@ namespace CIService.Helper
                     testSuiteExecution.tboxProcess = ExecuteProcess(Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE), TBOX_HOME_DIRECTORY,String.Format(" 12342 SlimAgent {0}",testSuiteExecution.aOFilePath));
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);
                     testSuiteExecution.tboxProcess.WaitForExit();
-                    //ExecuteProcess("taskkill", ".", String.Format("/PID {0}", testSuiteExecution.videoRecordProcess.Id)).WaitForExit();
-                    testSuiteExecution.videoRecordProcess.StandardInput.Write("q");
-                    testSuiteExecution.videoRecordProcess.WaitForExit();
+                    if (executionTracking.request.VideoRecord)
+                    {
+                        testSuiteExecution.videoRecordProcess.StandardInput.Write("q");
+                        testSuiteExecution.videoRecordProcess.WaitForExit();
+                    }
                     if (executionTracking.cancel)
                     {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
