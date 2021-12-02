@@ -101,9 +101,34 @@ jobs:
           sleep 2
           
           echo "Install Chrome Profile"
-          cd e2e
-          Expand-Archive chromeProfile\ToscaProfile.zip -DestinationPath "$env:LOCALAPPDATA\Google\Chrome\User Data"
+          $KeyPath = "HKLM:\Software\Policies\Google\Chrome\ExtensionInstallForcelist"
+          $KeyName = "1"
+          $KeyType = "String"          
+          $KeyValue = "njjjlolnnicemgigahffncnddbioccpo;https://clients2.google.com/service/update2/crx"
 
+          #Verify if the registry path already exists
+          if(!(Test-Path $KeyPath)) {
+              try {
+                  #Create registry path
+                  New-Item -Path $KeyPath -ItemType RegistryKey -Force -ErrorAction Stop
+              }
+              catch {
+                  Write-Output "FAILED to create the registry path"
+              }
+          }
+          #Verify if the registry key already exists
+          if(!((Get-ItemProperty $KeyPath).$KeyName)) {
+              try {
+                  #Create registry key 
+                  New-ItemProperty -Path $KeyPath -Name $KeyName -PropertyType $KeyType -Value $KeyValue
+              }
+              catch {
+                  Write-Output "FAILED to create the registry key"
+              }
+          }
+          
+          echo "Execute E2E"
+          cd e2e
           echo "Run toscactl"
           
           ..\cli\toscactl-windows-amd64.exe run acceptance installation integration
