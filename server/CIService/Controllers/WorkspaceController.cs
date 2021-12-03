@@ -48,7 +48,10 @@ namespace CIService.Controllers
                 createProject.templateType = EnumHelper.GetWorkspaceCreationTypeFromString(provider.FormData.Get("templateType"));
                 createProject.templateBranchName = provider.FormData.Get("templateBranchName");
                 createProject.templateConnectionString = provider.FormData.Get("templateConnectionString");
-                                
+                createProject.templateConnectionWorkspaceUsername = provider.FormData.Get("templateConnectionWorkspaceUsername");
+                createProject.templateConnectionWorkspacePassword = provider.FormData.Get("templateConnectionWorkspacePassword");
+
+
                 createProject.dbType = EnumHelper.getDBTypeFromString(provider.FormData.Get("dbType"));                
                 createProject.connectionString = provider.FormData.Get("connectionString");
     

@@ -13,6 +13,8 @@ import (
 var (
 	fromDefinition string
 	fromConnectionString string
+	fromConnectionUser string
+	fromConnectionPassword string
 	ownerRoleName string
 	viewerRoleName string
 	projectCmd            = &cobra.Command{
@@ -53,6 +55,8 @@ var (
 				Name:                     projectName,
 				TemplateType:             templateType,
 				TemplateConnectionString: fromConnectionString,
+				TemplateConnectionUsername: fromConnectionUser,
+				TemplateConnectionPassword: fromConnectionPassword,
 				OwnerRoleName:            ownerRoleName,
 				ViewerRoleName:           viewerRoleName,
 				DBType:                   dbtype,
@@ -80,6 +84,8 @@ func init() {
 
 	createCmd.PersistentFlags().StringVar(&fromDefinition, "from-definition","", "Create Workspace from file definition (Workspace definition (.tpr) and subset (.tsu) are needed in the path")
 	createCmd.PersistentFlags().StringVar(&fromConnectionString, "from-connection","", "Create Workspace from existing Tosca MSSQL Database")
+	createCmd.PersistentFlags().StringVar(&fromConnectionUser, "project-user","", "Tosca Project Username")
+	createCmd.PersistentFlags().StringVar(&fromConnectionPassword, "project-password","", "Tosca Project Password")
 	createCmd.PersistentFlags().StringVar(&ownerRoleName, "owner-group","", "Owner Group AD Name")
 	createCmd.PersistentFlags().StringVar(&viewerRoleName, "viewer-group","", "Viewer Group Ad Name")
 }

@@ -13,6 +13,8 @@ namespace CIService.Contract
         public string templateBranchName { get; set; }
 
         public string templateConnectionString { get; set; }
+        public string templateConnectionWorkspaceUsername { get; set; }
+        public string templateConnectionWorkspacePassword { get; set; }
 
         public WorkspaceCreationType templateType { get; set; }
         public ArrayList subsetFiles { get; set; }

@@ -18,7 +18,7 @@ namespace CIService.Tosca
         private TCWorkspace workspace;
 
 
-        public WorkspaceSession(string sessionID )
+        public WorkspaceSession(string sessionID)
         {
             InitializeWorkspace(sessionID, "Admin", "");
         }
