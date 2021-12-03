@@ -1,5 +1,6 @@
 ﻿using CIService.Contract;
 using CIService.Service;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,7 @@ namespace CIService.Tosca
 {
     class WorkspaceSession : IDisposable
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(WorkspaceSession));
         private string workspacePath;
         private string workspaceSessionID;
         private TCWorkspace workspace;
@@ -39,7 +41,8 @@ namespace CIService.Tosca
             {
                 workspace = TCAPIService.GetTCAPI().OpenWorkspace(workspacePath, userName, password);
                 if (!workspace.IsSingleUser)
-                {                    
+                {
+                    log.DebugFormat("Update All  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.UpdateAll();
                     workspace.GetProject().CheckoutTree();               
                 }
@@ -52,7 +55,7 @@ namespace CIService.Tosca
         }
 
         public List<TCObject> SearchForExecutionList(List<KeyValue> executionFilter)
-        {
+        {            
             List<string> searchParams = executionFilter.Select(p => $"{p.key}==\"{p.value}\"").ToList();
             string searchFilter = string.Join(" AND ", searchParams);         
             return SearchFor($"=>SUBPARTS:ExecutionList[{searchFilter}]");            
@@ -60,15 +63,17 @@ namespace CIService.Tosca
 
         public List<TCObject> SearchFor(String tql)
         {
+            log.DebugFormat("TQL Query {0} on project {1}", tql,workspace.GetProject().DisplayedName);
             List<TCObject> tCObjects = workspace.GetProject().Search(tql);
             return tCObjects;
         }
 
         public void Dispose()
-        {
+        {            
             if (TCAPIService.GetTCAPI().IsWorkspaceOpen)
             {
                 if (!workspace.IsSingleUser)
+                    log.DebugFormat("CheckInAll  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.CheckInAll("Auto Push");
                 TCAPIService.GetTCAPI().CloseWorkspace();
             }
@@ -80,7 +85,8 @@ namespace CIService.Tosca
         }
 
         internal void Save()
-        {              
+        {
+            log.DebugFormat("Save Project {0}", workspace.GetProject().DisplayedName);
             workspace.Save();            
         }
     }

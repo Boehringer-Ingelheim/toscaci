@@ -1,4 +1,6 @@
-﻿using System;
+﻿using log4net;
+using log4net.Config;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -11,9 +13,10 @@ namespace CIService
 {
     class Program
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
         static void Main(string[] args)
         {
-
+            XmlConfigurator.Configure();
             Console.WriteLine(System.Security.Principal.WindowsIdentity.GetCurrent().Name);
             Uri myUri = new Uri(@"http://localhost:"+ ConfigurationManager.AppSettings["listenPort"]);
             var config = new System.Web.Http.SelfHost.HttpSelfHostConfiguration(myUri);

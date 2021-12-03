@@ -10,13 +10,14 @@ using CIService.Contract;
 using CIService.Service;
 using CIService.Tosca;
 using CIService.Helper;
+using log4net;
 
 namespace CIService.Controllers
 {
     [RoutePrefix("api/v2/execution")]
     public class ExecutionListController : ApiController
-    {      
-
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ExecutionListController));
 
         [HttpPost]
         [Route("")]
@@ -26,9 +27,11 @@ namespace CIService.Controllers
             ExecutionTracking executionTrack = null;
             try
             {
+                log.InfoFormat("Request Test Execution on workspace session {0}", request.sessionID);
                 List<ExecutionTracking> runningExecutions = ExecutionTrackerService.HaveExecutionRunning();
                 if (runningExecutions.Count()>0)
-                {                    
+                {
+                    log.WarnFormat("Execution Request on workspace {0} can not be placed because an execution is already running ", request.sessionID);
                     return CreateErrorResponseMessage(HttpStatusCode.Conflict,$"Could not create a new execution since the following execution(s) are still running: {String.Join(",",runningExecutions.Select(x => x.status.ToString()))}");
                 }
                 List<String> executionListIDs = new List<String>();
@@ -39,6 +42,7 @@ namespace CIService.Controllers
                     var executionLists = session.SearchForExecutionList(request.ExecutionFilter);
                     if (executionLists.Count() == 0)
                     {
+                        log.WarnFormat("No execution Lists founds, criteria {0}", request.ExecutionFilter);
                         return CreateErrorResponseMessage(HttpStatusCode.BadRequest, "NO execution Lists found");
                     }                    
                     foreach (var executionList in executionLists)
@@ -48,6 +52,7 @@ namespace CIService.Controllers
                         var executionEntries = executionList.Search($"=>SUBPARTS:ExecutionEntry");
                         if (executionEntries.Count() == 0)
                         {
+                            log.WarnFormat("execution List {0}  no Test Cases found", executionList);
                             return CreateErrorResponseMessage(HttpStatusCode.BadRequest, String.Format("Execution List {0} is empty", executionList.DisplayedName));
                         }
                         resExecutionList.entries = executionEntries.Select(t => t.DisplayedName).ToList();
@@ -61,6 +66,7 @@ namespace CIService.Controllers
                         var tql = String.Format("->PROJECT->SUBPARTS:TCFolder[(Name=?\"{0}\")]->SUBPARTS:ReportDefinition[(Name=?\"{1}\")]", "Reporting", report);
                         if (session.SearchFor(tql).Count() == 0)
                         {
+                            log.WarnFormat("Report {0}  not found", report);
                             return CreateErrorResponseMessage(HttpStatusCode.BadRequest, String.Format("Report {0} does not exists or it's not in the root Reporting folder, please check https://documentation.tricentis.com/tosca/1300/en/content/reporting/print_report.htm for more details", report));
                         }
 

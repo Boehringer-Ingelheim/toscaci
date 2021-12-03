@@ -1,5 +1,6 @@
 ﻿using CIService.Contract;
 using CIService.Enum;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,6 +9,7 @@ namespace CIService.Service
 {
     public class ExecutionTrackerService
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ExecutionTrackerService));
         private static readonly object executionTrackerLockObject = new object();
         private static List<ExecutionTracking> executionTracker = new List<ExecutionTracking>();
 
@@ -54,7 +56,7 @@ namespace CIService.Service
         public static void SetExecutionTracking(string id, Action<ExecutionTracking> callable)
         {
             lock (executionTrackerLockObject)
-            {
+            {                
                 callable(GetExecutionTracking(id));
             }
         }
@@ -63,6 +65,7 @@ namespace CIService.Service
         {
             SetExecutionTracking(id, t =>
             {
+                log.DebugFormat("Execution Tracking State {0} on {1} ", status, id);
                 t.status = status;
             });
         }
@@ -71,6 +74,7 @@ namespace CIService.Service
         {
             SetExecutionTracking(id, t =>
             {
+                log.DebugFormat("Execution Tracking State Failed on {0} ",  id);
                 t.status = ExecutionStatus.Failed;
                 t.error = ex;
             });
