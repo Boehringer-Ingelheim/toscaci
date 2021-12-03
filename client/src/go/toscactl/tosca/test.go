@@ -31,6 +31,7 @@ const(
 	//Default values
 	defaultResultPath="build/Test"
 	defaultSourcePath="src/tosca"
+	defaultToscaAdminUsername="admin"
 	defaultTimeout=time.Duration(30)
 
 	//Execution Status
@@ -116,6 +117,7 @@ func LoadTestSuiteConfiguration(testSuitePath string,name string) (testSuite *Te
 		ResultFolder: defaultResultPath,
 		Project:      ProjectDefinition{
 			SourcePath: defaultSourcePath,
+			WorkspaceUsername: defaultToscaAdminUsername,
 		},
 		Agent: TestAgentConfiguration{},
 		TestSuite:    TestExecutionConfiguration{
@@ -433,6 +435,8 @@ func (t *Provider) prepareWorkspace(testSuiteConfig TestSuiteConfiguration,ctx c
 		Name:                     fmt.Sprintf("%s%d",testSuiteConfig.Name,rndNumber),
 		TemplateType:             templateType,
 		TemplateConnectionString: testSuiteConfig.Project.SourceConnectionStringDB,
+		TemplateConnectionUsername: testSuiteConfig.Project.WorkspaceUsername,
+		TemplateConnectionPassword: testSuiteConfig.Project.WorkspacePassword,
 		DBType:                   LocalDB,
 	},testSuiteConfig.Agent.Hostname,ctx)
 	if err!=nil {

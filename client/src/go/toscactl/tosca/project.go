@@ -25,6 +25,8 @@ type ProjectCreateRequest struct {
 	Name                     string
 	TemplateType             CreateTemplateType
 	TemplateConnectionString string
+	TemplateConnectionUsername string
+	TemplateConnectionPassword string
 	OwnerRoleName            string
 	ViewerRoleName           string
 	DBType                   DBType
@@ -100,6 +102,12 @@ func (t *Provider) createProject(createProjectRequest ProjectCreateRequest,hostU
 		}
 	case CreateFromDatabase:
 		if err:=multipartField(writer,"templateConnectionString",createProjectRequest.TemplateConnectionString);err!=nil{
+			return nil,err
+		}
+		if err:=multipartField(writer,"templateConnectionWorkspaceUsername",createProjectRequest.TemplateConnectionUsername);err!=nil{
+			return nil,err
+		}
+		if err:=multipartField(writer,"templateConnectionWorkspacePassword",createProjectRequest.TemplateConnectionPassword);err!=nil{
 			return nil,err
 		}
 	}
@@ -185,6 +193,12 @@ func checkProjectRequest(request ProjectCreateRequest) error {
 		if request.TemplateConnectionString==""{
 			return fmt.Errorf("template connection string is mandatory")
 			//TODO validate connection string?
+		}
+		if request.TemplateConnectionUsername==""{
+			return fmt.Errorf("template connection Username is mandatory")
+		}
+		if request.TemplateConnectionPassword==""{
+			return fmt.Errorf("template connection Password is mandatory")
 		}
 	case CreatefromDefinition:
 		dir, err := os.Stat(request.SourcePath)

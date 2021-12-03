@@ -38,7 +38,7 @@ namespace CIService.Service
                 {
                     string subsetPath = null;
                     string projectDefinition = null;
-                    exportProject(createProject.templateConnectionString, createProject.templateBranchName, tempPath, out projectDefinition, out subsetPath);
+                    exportProject(createProject.templateConnectionString,createProject.templateConnectionWorkspaceUsername,createProject.templateConnectionWorkspacePassword, createProject.templateBranchName, tempPath, out projectDefinition, out subsetPath);
                     createProject.projectDefinition = projectDefinition;
                     createProject.subsetFiles.Add(subsetPath);
                 }
@@ -49,7 +49,7 @@ namespace CIService.Service
                         {
                             projectInfo.dbName = createToscaDatabase(createProject.name, createProject.ownerRoleName);
                             //todo connection string we should create the DB Schema aswell for full dynamic!!
-                            createProject.connectionString = string.Format("Server={0};Database={1};Uid=YourUser;Pwd=YourPassword;", ConfigurationManager.AppSettings["SQLServer"], projectInfo.dbName);
+                            createProject.connectionString = string.Format("Server={0};Database={1};Uid={2};Pwd={3};", ConfigurationManager.AppSettings["SQLServer"], projectInfo.dbName,createProject.templateConnectionWorkspaceUsername,createProject.templateConnectionWorkspacePassword);
                         }
                         workspace = TCAPIService.GetTCAPI().CreateMultiuserWorkspaceWithSQLServerCommon(projectInfo.workspacePath, createProject.connectionString);                        
                         break;
@@ -94,7 +94,7 @@ namespace CIService.Service
             return projectInfo;
         }
 
-        private static void exportProject(string connectionString, string branch,string baseTempPath, out string projectDefinitionPath, out string subsetPath)
+        private static void exportProject(string connectionString, String user, String password, string branch,string baseTempPath, out string projectDefinitionPath, out string subsetPath)
         {
             log.DebugFormat("exporting Project from {0}", connectionString);
             string tempPath = Path.Combine(baseTempPath, "tosca_project_" + new Random().Next());
@@ -109,11 +109,11 @@ namespace CIService.Service
                 TCWorkspace workspace = null;                
                 if (branch != null)
                 {
-                    workspace = TCAPIService.GetTCAPI().CreateMultiuserWorkspaceFromBranchWithSQLServerCommon(workspacePath, connectionString, branch);
+                    workspace = TCAPIService.GetTCAPI().CreateMultiuserWorkspaceFromBranchWithSQLServerCommon(workspacePath, connectionString,user,password, branch);
                 }
                 else
                 {
-                    workspace = TCAPIService.GetTCAPI().CreateMultiuserWorkspaceWithSQLServerCommon(workspacePath, connectionString);
+                    workspace = TCAPIService.GetTCAPI().CreateMultiuserWorkspaceWithSQLServerCommon(workspacePath, connectionString,user,password);
                 }
 
                 //workspace.GetProject().ExportProjectDefinitions("Ok", projectDefinitionPath);

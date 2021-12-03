@@ -80,6 +80,12 @@ var (
 				if fromConnectionString != ""{
 					testSuiteConfig.Project.SourceConnectionStringDB=fromConnectionString
 				}
+				if fromConnectionUser != ""{
+					testSuiteConfig.Project.WorkspaceUsername=fromConnectionUser
+				}
+				if fromConnectionPassword != ""{
+					testSuiteConfig.Project.WorkspacePassword=fromConnectionPassword
+				}
 				if agentHostname!="" {
 					testSuiteConfig.Agent.Hostname=agentHostname
 				}
@@ -180,6 +186,8 @@ func init() {
 	//Workspace parameters
 	runCmd.PersistentFlags().StringVar(&fromDefinition, "from-path","src/tosca", "Create Workspace from file definition (Workspace definition (.tpr) and subset (.tsu) are needed in the path")
 	runCmd.PersistentFlags().StringVar(&fromConnectionString, "from-connection","", "Create Workspace from existing Tosca MSSQL Database")
+	runCmd.PersistentFlags().StringVar(&fromConnectionUser, "project-user","", "Tosca Project Username")
+	runCmd.PersistentFlags().StringVar(&fromConnectionPassword, "project-password","", "Tosca Project Password")
 
 	//TestExecutionConfiguration parameters
 	runCmd.PersistentFlags().Var(&testSuiteSelectorsFlag, "suite-selector", "Select Execution Lists  to run by properties")
