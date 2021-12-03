@@ -1,5 +1,6 @@
 ﻿using CIService.Contract;
 using CIService.Enum;
+using log4net;
 using System;
 using System.Configuration;
 using System.Data.SqlClient;
@@ -14,6 +15,7 @@ namespace CIService.Service
 {
     class WorkspaceService
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(WorkspaceService));
         public static void DeleteWorkspace(String workspaceID)
         {
             String ProjectPath = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(workspaceID));            
@@ -26,7 +28,8 @@ namespace CIService.Service
             Directory.CreateDirectory(tempPath);
             projectInfo.workspacePath = Path.Combine(tempPath, createProject.name);
             projectInfo.sessionID = Convert.ToBase64String(Encoding.UTF8.GetBytes(projectInfo.workspacePath + "/" + projectInfo.name + ".tws"));
-
+            log.InfoFormat("Creating Workspace {0} type {1} session {2}", projectInfo.name,createProject.templateType,projectInfo.sessionID);
+            log.DebugFormat("Workspace path {0}", projectInfo.workspacePath);
             TCWorkspace workspace = null;
             
             try
@@ -93,6 +96,7 @@ namespace CIService.Service
 
         private static void exportProject(string connectionString, string branch,string baseTempPath, out string projectDefinitionPath, out string subsetPath)
         {
+            log.DebugFormat("exporting Project from {0}", connectionString);
             string tempPath = Path.Combine(baseTempPath, "tosca_project_" + new Random().Next());
             Directory.CreateDirectory(tempPath);
             subsetPath = Path.Combine(tempPath, "subset.tsu");
@@ -127,6 +131,7 @@ namespace CIService.Service
 
         private static void importFromDefinition(TCWorkspace workspace, CreateProject createProject)
         {
+            log.DebugFormat("Importing Project definition on workspace {0}", createProject.name);
             TCProject project = workspace.GetProject();
             if (createProject.projectDefinition != null)
             {
@@ -134,6 +139,7 @@ namespace CIService.Service
             }
             foreach (String subsetFilePath in createProject.subsetFiles)
             {
+                log.DebugFormat("Importing Subset definition {0} on workspace {1}", subsetFilePath, createProject.name);
                 TCTaskParams tcTaskParams = new TCTaskParams();
                 tcTaskParams.AddParam("FilesToImport", subsetFilePath);
                 //tcTaskParams.AddParam("ConfirmUseLargeSubsetImport", "Ok");

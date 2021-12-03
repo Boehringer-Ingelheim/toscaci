@@ -100,7 +100,7 @@ jobs:
           Start-Process '.\toscaci-service\CIService.exe'
           sleep 2
           
-          echo "Install Chrome Profile"
+          echo "Install Chrome Tosca Extension"
           $KeyPath = "HKLM:\Software\Policies\Google\Chrome\ExtensionInstallForcelist"
           $KeyName = "1"
           $KeyType = "String"          

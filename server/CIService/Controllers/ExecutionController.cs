@@ -10,6 +10,7 @@ using System.Web.Http;
 using CIService.Contract;
 using CIService.Enum;
 using CIService.Service;
+using log4net;
 using Newtonsoft.Json;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -19,10 +20,12 @@ namespace CIService.Controllers
     [RoutePrefix("api/v2/execution/{id}")]
     public class ExecutionController : ApiController
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ExecutionController));
         [HttpDelete]
         [Route("")]
         public HttpResponseMessage CancelExecution(string id)
         {
+            log.DebugFormat("Cancel execution Request for {0}", id);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -39,6 +42,7 @@ namespace CIService.Controllers
         [Route("")]
         public HttpResponseMessage Get(string id) // return status
         {
+            log.DebugFormat("Get execution state Request for {0}", id);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack==null)
             {
@@ -52,6 +56,7 @@ namespace CIService.Controllers
         [Route("xunit")]
         public HttpResponseMessage GetXunitList(string id)
         {
+            log.DebugFormat("Get xunit list Request for {0}", id);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -71,6 +76,7 @@ namespace CIService.Controllers
         [Route("xunit/{xunitID}")]
         public HttpResponseMessage GetXunit(string id, string xunitID)
         {
+            log.DebugFormat("xunit file Download request for {0} {1}", id,xunitID);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -99,6 +105,7 @@ namespace CIService.Controllers
         [Route("report")]
         public HttpResponseMessage GetReportList(string id)
         {
+            log.DebugFormat("report request list request for {0}", id);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -118,6 +125,7 @@ namespace CIService.Controllers
         [Route("report/{reportID}")]
         public HttpResponseMessage GetReport(string id,string reportID)
         {
+            log.DebugFormat("report file Download request for {0} {1}", id, reportID);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -145,6 +153,7 @@ namespace CIService.Controllers
         [Route("artifact")]
         public HttpResponseMessage GetArtifactList(string id)
         {
+            log.DebugFormat("artifact request list request for {0}", id);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {
@@ -164,6 +173,7 @@ namespace CIService.Controllers
         [Route("artifact/{artifactID}")]
         public HttpResponseMessage GetArtifact(string id, string artifactID)
         {
+            log.DebugFormat("artifact file Download request for {0} {1}", id, artifactID);
             var executionTrack = ExecutionTrackerService.GetExecutionTracking(id);
             if (executionTrack == null)
             {

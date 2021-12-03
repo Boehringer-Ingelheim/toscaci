@@ -148,6 +148,8 @@ var logTestSuiteExecution *log.Entry
 func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.Context) ( err error) {
 	logTestSuite=log.WithField("testSuite",suiteConfig.Name)
 	logTestSuite.Info("Preparing to execute Test Suite")
+
+	logTestSuite.Debugf("Test Suite Configuration: %+v",suiteConfig)
 	timeoutContext,_:=context.WithTimeout(ctx,suiteConfig.TestSuite.Timeout*time.Minute)
 
 	buildDirPath :=path.Join(t.config.WorkingDir, suiteConfig.ResultFolder,suiteConfig.Name)
@@ -190,9 +192,7 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		return err
 	}
 	executorSuiteConfig.WorkspaceSessionID=executorSuiteConfig.workspace.SessionID
-	if err!=nil{
-		return err
-	}
+	logTestSuite.Debugf("Executor Suite Config: %+v",executorSuiteConfig)
 	defer func(){
 		logTestSuite.Infof("Deleting Workspace")
 		if err2:=t.DeleteWorkspace(executorSuiteConfig,context.Background());err2!=nil{
@@ -200,7 +200,6 @@ func (t *Provider) RunTestSuite(suiteConfig TestSuiteConfiguration,ctx context.C
 		}
 	}()
 	logTestSuite.Infof("Workspace %s ready", executorSuiteConfig.workspace.SessionID)
-
 	logTestSuite.Infof("Requesting Test %s on workspace %s",suiteConfig.Name,executorSuiteConfig.workspace.SessionID)
 	if err := t.requestTestExecution(executorSuiteConfig, timeoutContext);err!=nil{
 		return err
@@ -303,6 +302,7 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if err!=nil{
 		return err
 	}
+	logTestSuite.Debugf("Request Execution Payload: %+v",testExecutorConfig)
 	req, err := http.NewRequestWithContext(ctx,"POST",executionURL , bytes.NewBuffer(b))
 	if err!=nil{
 		return err
@@ -321,13 +321,13 @@ func (t *Provider) triggerExecution(testExecutorConfig *TestExecutorConfiguratio
 	if err!=nil {
 		return err
 	}
-	if response.StatusCode==http.StatusInternalServerError {
-		return fmt.Errorf(string(byteResponse))
-	}
 
 	if response.StatusCode == http.StatusConflict {
 		return AlreadyRunningExecution
+	}else if response.StatusCode != http.StatusAccepted {
+		return fmt.Errorf("error %s statusCode %d",string(byteResponse),response.StatusCode)
 	}
+
 	executionResponse:= &TestExecutionResponse{}
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
 		return err
@@ -367,6 +367,7 @@ func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,
 func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,urlBase string,urldownload string,outputPath string,ctx context.Context) ([]string,error) {
 	var toscaFiles []string
 	reportListURL,err:=t.getAgentURL(testExecutorConfig,fmt.Sprintf(urlBase,testExecutorConfig.executionID))
+	log.Debugf("Get Tosca Files Request %s",reportListURL)
 	if err!=nil{
 		return nil,err
 	}
@@ -389,6 +390,8 @@ func (t *Provider) getToscaFiles(testExecutorConfig *TestExecutorConfiguration,u
 		return nil,err
 	}
 	executionResponse:= &TestExecutionResponse{}
+	log.Debugf("Get Tosca Files Response %s",string(byteResponse))
+
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
 		return nil,err
 	}
@@ -443,6 +446,7 @@ func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Con
 	if err!=nil{
 		return executionFailed,err
 	}
+	logTestSuite.Debugf("Request Execution Status: %s",executionStatusURL)
 	req, err := http.NewRequestWithContext(ctx,"GET", executionStatusURL,nil)
 	if err!=nil{
 		return executionFailed,err
@@ -459,12 +463,13 @@ func (t *Provider) checkStatus(config *TestExecutorConfiguration,ctx context.Con
 	if err!=nil {
 		return executionFailed,err
 	}
-	if response.StatusCode==http.StatusInternalServerError {
-		return "",fmt.Errorf(string(byteResponse))
-	}
+	logTestSuite.Debugf("Response Execution Status: %s",string(byteResponse))
 	if response.StatusCode == http.StatusNotFound {
 		return executionFailed,fmt.Errorf("execution not found, agent probably dead")
+	}else if response.StatusCode!=http.StatusOK {
+		return "",fmt.Errorf(string(byteResponse))
 	}
+
 	executionResponse:= &TestExecutionResponse{}
 	if err:=json.Unmarshal(byteResponse,executionResponse);err!=nil {
 		return "",err
@@ -487,6 +492,7 @@ func (t *Provider) cancelTestExecution(config *TestExecutorConfiguration) error 
 	if err != nil {
 		return err
 	}
+	logTestSuite.Debugf("Request Cancel Execution: %s",cancelExecutionURL)
 	req, err := http.NewRequest("DELETE", cancelExecutionURL, nil)
 	if err != nil {
 		return err

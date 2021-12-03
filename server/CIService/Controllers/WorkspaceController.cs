@@ -1,6 +1,7 @@
 ﻿using CIService.Contract;
 using CIService.Enum;
 using CIService.Service;
+using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -14,10 +15,13 @@ using System.Threading.Tasks;
 using System.Web.Http;
 
 namespace CIService.Controllers
-{
+{    
+
     [RoutePrefix("api/v2/workspace")]
     public class WorkspaceController : ApiController
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(WorkspaceController));
+
         [HttpPost]
         //[RequestSizeLimit(10L * 1024L * 1024L * 1024L)]
         //[RequestFormLimits(MultipartBodyLengthLimit = 10L * 1024L * 1024L * 1024L)]
@@ -25,12 +29,14 @@ namespace CIService.Controllers
         [Route("")]
         public async Task<HttpResponseMessage> CreateWorkspace() // return status
         {
+            log.Debug("Creating Workspace Request...");
             if (!this.Request.Content.IsMimeMultipartContent())
             {
                 return CreateErrorResponseMessage("Content is not Multipart Content.", HttpStatusCode.UnsupportedMediaType);
             }
             var tempPath = Path.Combine(Path.GetTempPath(), "tosca_" + new Random().Next());
-            Directory.CreateDirectory(tempPath);
+            log.DebugFormat("Workspce Temp Path {0}...", tempPath);
+            Directory.CreateDirectory(tempPath);            
             var provider = new MultipartFormDataStreamProvider(tempPath);
             try
             {
@@ -74,12 +80,14 @@ namespace CIService.Controllers
                 }
                 createProject.subsetFiles = subsetFiles;
                 createProject.projectDefinition = projectDefintion;
+                
                 var projectInfo = WorkspaceService.CreateProject(createProject);
                 
                 return CreateResponseMessage(projectInfo, HttpStatusCode.OK);
             }
             catch (System.Exception e)
             {
+                log.Error("Error when creating workspace", e);
                 return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, e);
             }
             finally
@@ -95,6 +103,7 @@ namespace CIService.Controllers
         [Route("{workspaceID}")]
         public HttpResponseMessage DeleteWorkspace(string workspaceID)
         {
+            log.InfoFormat("Deleting workspace {0}", workspaceID);
             List<ExecutionTracking> runningExecution = ExecutionTrackerService.HaveExecutionRunning(workspaceID);
             if (runningExecution.Count() > 0)
             {
@@ -110,6 +119,7 @@ namespace CIService.Controllers
             }
             catch(Exception ex)
             {
+                log.Error("Error when deleting workspace", ex);
                 return CreateErrorResponseMessage(ex.Message, HttpStatusCode.InternalServerError);
             }            
         }
