@@ -123,7 +123,7 @@ var (
 						testSuiteConfig.TestSuite.Parameters.Set("GIT_BRANCH=" + string(out))
 					}
 
-					out, err = helper.ExecuteProcess(exec.Command("git", "log", "-1", "--pretty=format:%an", testSuiteConfig.Project.SourcePath), appConfig.WorkingDir)
+					out, err = helper.ExecuteProcess(exec.Command("git", "log", "-1", "--pretty=format:%ae", testSuiteConfig.Project.SourcePath), appConfig.WorkingDir)
 					if err == nil && len(out) > 0 {
 						testSuiteConfig.TestSuite.Parameters.Set("GIT_AUTHOR=" + string(out))
 					}
