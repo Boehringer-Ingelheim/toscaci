@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/avast/retry-go"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -17,6 +15,9 @@ import (
 	"toscactl/entity"
 	"toscactl/helper"
 	"toscactl/test"
+
+	"github.com/avast/retry-go"
+	log "github.com/sirupsen/logrus"
 )
 const(
     APICreateExecution    = "execution"
@@ -361,6 +362,10 @@ func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,
 		if err!=nil {
 			return nil,err
 		}
+
+		// Fix missing timestamp (prior to Tosca 15.0)
+		test.PatchMissingFields(testResult, testResultFile)
+
 		testResults = append(testResults,testResult)
 	}
 	return testResults,nil
