@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"os"
 	"os/exec"
 	"path"
 	"toscactl/entity"
 	"toscactl/helper"
 	"toscactl/tosca"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 )
 const(
 
