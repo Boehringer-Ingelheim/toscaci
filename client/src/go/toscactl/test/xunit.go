@@ -2,29 +2,29 @@ package test
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
 )
 type TestCaseError struct {
-	//Text    string `xml:",chardata"`
+	Text    string `xml:",chardata"`
 	Type    string `xml:"type,attr"`
 	Message string `xml:"message,attr"`
 }
 
 
 type Testcase struct {
-	//Text      string        `xml:",chardata"`
+	Text      string        `xml:",chardata"`
 	Name      string        `xml:"name,attr"`
 	Time      string        `xml:"time,attr"`
 	Classname string        `xml:"classname,attr"`
 	Error     TestCaseError `xml:"error"`
-	Failure   TestCaseError `xml:"failure"`
 	SystemOut string        `xml:"system-out"`
 }
 
 type Testsuite struct {
-	//Text     string `xml:",chardata"`
+	Text     string `xml:",chardata"`
 	Name     string `xml:"name,attr"`
 	Tests    int32 `xml:"tests,attr"`
 	Failures int32 `xml:"failures,attr"`
@@ -104,22 +104,29 @@ func ReadTestResults(filePath string) (*Xunit,error){
 	return &xunit,nil
 }
 
-func PatchMissingTimestamp(timestamp string, xunit *Xunit, filePath string) {
+func PatchMissingTimestamp(timestamp string, xunit *Xunit, filePath string) (error){
+	// Load file as string to perform replacements (marshalling xunit produces invalid xmls)
+	xmlFile, err := os.Open(filePath)
+	if err!= nil{
+		return err
+	}
+	defer xmlFile.Close()
+	byteValue, _ := ioutil.ReadAll(xmlFile)
+	file_s := string(byteValue)
+
 	// Add given value when timestamp is not available as a workaround (implemented in Tosca 15.0+)
 	for idx := range xunit.Testsuite {
 		if xunit.Testsuite[idx].Timestamp == "" {
 			xunit.Testsuite[idx].Timestamp = timestamp
+
+			id_string := fmt.Sprintf("id=\"%s\"", xunit.Testsuite[idx].ID)
+			replacement_string := fmt.Sprintf("%s timestamp=\"%s\"", id_string, timestamp)
+			file_s = strings.Replace(file_s, id_string, replacement_string, 1)
 		}
 	}
-
-	// Reconstruct XML file from marshalled contents
-	byteOutput,_ := xml.MarshalIndent(&xunit, "", "  ")
-	out_s := string(byteOutput)
-	// Handle html newlines and tabs in <system-out>
-	out_s = strings.ReplaceAll(out_s, "&#xA;", "\n")
-	out_s = strings.ReplaceAll(out_s, "&#x9;", "\t")
-	out_s = "<?xml version=\"1.0\"?>\n" + out_s  // Add generic header
 	
 	// Update the original file
-	ioutil.WriteFile(filePath, []byte(out_s), 0644)
+	ioutil.WriteFile(filePath, []byte(file_s), 0644)
+
+	return nil
 }

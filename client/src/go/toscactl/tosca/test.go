@@ -366,7 +366,11 @@ func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,
 		}
 
 		// Fix missing timestamp (prior to Tosca 15.0)
-		test.PatchMissingTimestamp(now_s, testResult, testResultFile)
+		err = test.PatchMissingTimestamp(now_s, testResult, testResultFile)
+		if err != nil {
+			return nil,err
+		}
+
 
 		testResults = append(testResults,testResult)
 	}
