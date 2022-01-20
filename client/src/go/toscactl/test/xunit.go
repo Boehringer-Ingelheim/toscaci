@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
-	"time"
 )
 type TestCaseError struct {
 	//Text    string `xml:",chardata"`
@@ -105,13 +104,11 @@ func ReadTestResults(filePath string) (*Xunit,error){
 	return &xunit,nil
 }
 
-func PatchMissingFields(xunit *Xunit, filePath string) {
-	// Add timestamp information when not available as a workaround (implemented in Tosca 15.0+)
-	var now = time.Now()
-	var now_s = now.Format(time.RFC3339)	
+func PatchMissingTimestamp(timestamp string, xunit *Xunit, filePath string) {
+	// Add given value when timestamp is not available as a workaround (implemented in Tosca 15.0+)
 	for idx := range xunit.Testsuite {
 		if xunit.Testsuite[idx].Timestamp == "" {
-			xunit.Testsuite[idx].Timestamp = now_s
+			xunit.Testsuite[idx].Timestamp = timestamp
 		}
 	}
 

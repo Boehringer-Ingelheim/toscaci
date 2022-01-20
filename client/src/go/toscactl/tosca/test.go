@@ -357,6 +357,8 @@ func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,
 	if err!=nil {
 		return nil,err
 	}
+	var now = time.Now()
+	var now_s = now.Format(time.RFC3339)
 	for _, testResultFile := range testResultFiles{
 		testResult, err := test.ReadTestResults(testResultFile)
 		if err!=nil {
@@ -364,7 +366,7 @@ func (t *Provider) getTestReports(testExecutorConfig *TestExecutorConfiguration,
 		}
 
 		// Fix missing timestamp (prior to Tosca 15.0)
-		test.PatchMissingFields(testResult, testResultFile)
+		test.PatchMissingTimestamp(now_s, testResult, testResultFile)
 
 		testResults = append(testResults,testResult)
 	}
