@@ -21,6 +21,18 @@ build_darwin: build_prepare
 	cd $(SRC_DIR)
 	GOOS=darwin go build -v $(BUILD_ARGS) -o $(BUILD_DIR)/toscactl-darwin-amd64 .
 
+test_linux: 
+	cd $(SRC_DIR)
+	GOOS=linux go test -v ./...
+
+test_windows: 
+	cd $(SRC_DIR)
+	GOOS=windows go test -v ./...
+
+test_darwin: 
+	cd $(SRC_DIR)
+	GOOS=darwin go test -v ./...
+
 clean:
 	rm -rf "$(BUILD_DIR)"
 

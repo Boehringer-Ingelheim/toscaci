@@ -64,7 +64,7 @@ func (selectorMap *KeyValue) String() string {
 func (selectorMap *KeyValue) Set(value string) error {
 	keyValue:=strings.Split(value,"=")
 	if len(keyValue) <= 1 {
-		return fmt.Errorf("invalid format %s expected labelName=labelValue")
+		return fmt.Errorf("invalid format %s expected labelName=labelValue", value)
 	}
 	(*selectorMap)[keyValue[0]]=keyValue[1]
 	return nil
