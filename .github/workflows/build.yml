@@ -173,7 +173,7 @@ jobs:
         working-directory: client
         run: make build_${{ matrix.goos }} VERSION=${{ needs.precheck.outputs.version }} COMMIT=$(git rev-parse HEAD)
       - name: Test
-        run: make test_${{ matrix.goos }
+        run: make test_${{ matrix.goos }}
       - name: 'Archive debug toscactl'
         uses: actions/upload-artifact@v2
         with:
