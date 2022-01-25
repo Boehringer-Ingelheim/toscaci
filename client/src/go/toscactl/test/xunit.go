@@ -2,13 +2,15 @@ package test
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 type TestCaseError struct {
-		Text    string `xml:",chardata"`
-		Type    string `xml:"type,attr"`
-		Message string `xml:"message,attr"`
+	Text    string `xml:",chardata"`
+	Type    string `xml:"type,attr"`
+	Message string `xml:"message,attr"`
 }
 
 
@@ -28,6 +30,7 @@ type Testsuite struct {
 	Failures int32 `xml:"failures,attr"`
 	Errors   int32 `xml:"errors,attr"`
 	Time     string `xml:"time,attr"`
+	Timestamp string `xml:"timestamp,attr"`
 	Skipped  int32 `xml:"skipped,attr"`
 	Hostname string `xml:"hostname,attr"`
 	ID       string `xml:"id,attr"`
@@ -99,4 +102,31 @@ func ReadTestResults(filePath string) (*Xunit,error){
 	}
 
 	return &xunit,nil
+}
+
+func PatchMissingTimestamp(timestamp string, xunit *Xunit, filePath string) (error){
+	// Load file as string to perform replacements (marshalling xunit produces invalid xmls)
+	xmlFile, err := os.Open(filePath)
+	if err!= nil{
+		return err
+	}
+	defer xmlFile.Close()
+	byteValue, _ := ioutil.ReadAll(xmlFile)
+	file_s := string(byteValue)
+
+	// Add given value when timestamp is not available as a workaround (implemented in Tosca 15.0+)
+	for idx := range xunit.Testsuite {
+		if xunit.Testsuite[idx].Timestamp == "" {
+			xunit.Testsuite[idx].Timestamp = timestamp
+
+			id_string := fmt.Sprintf("id=\"%s\"", xunit.Testsuite[idx].ID)
+			replacement_string := fmt.Sprintf("%s timestamp=\"%s\"", id_string, timestamp)
+			file_s = strings.Replace(file_s, id_string, replacement_string, 1)
+		}
+	}
+	
+	// Update the original file
+	ioutil.WriteFile(filePath, []byte(file_s), 0644)
+
+	return nil
 }

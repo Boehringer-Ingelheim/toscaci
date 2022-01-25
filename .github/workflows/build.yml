@@ -150,11 +150,23 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           require_tests: true
 
-
+  test_toscactl:
+    runs-on: [ubuntu-20.04]
+    needs: [precheck]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1        
+      - name: Setup GO
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16' # The Go version to download (if necessary) and use.
+      - name: Test
+        working-directory: client
+        run: make test
           
   build_toscactl:
     runs-on: [ubuntu-20.04]
-    needs: [precheck]
+    needs: [precheck, test_toscactl]
     strategy:
       matrix:
         goos: [linux, windows, darwin]
