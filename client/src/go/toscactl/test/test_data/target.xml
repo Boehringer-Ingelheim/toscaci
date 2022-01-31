@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<testsuites>
+  <testsuite name="Acceptance" tests="3" failures="1" errors="2" time="24" skipped="0" hostname="example.machine" id="0-0-0-0" timestamp="2011-10-17T23:05:06">
+    <testcase name="tcase1" time="1" classname="Acceptance" status="">
+      <failure type="ExecutionResultState.Error" message="TestCase Failed with Error" />
+      <system-out>	some text </system-out>
+    </testcase>
+    <testcase name="tcase2" time="11" classname="Acceptance">
+      <error type="ExecutionResultState.Failed" message="TestCase Failed with Failure" />
+      <system-out>	more text </system-out>
+    </testcase>
+    <testcase name="tcase3" time="11" classname="Acceptance">
+      <error type="ExecutionResultState.Failed" message="TestCase Failed with Failure" />
+      <system-out>	even more text </system-out>
+    </testcase>
+  </testsuite>
+  <testsuite name="Acceptance" tests="1" failures="0" errors="0" time="24" skipped="0" hostname="example.machine" id="0-0-0-1" timestamp="do not change me">
+    <testcase name="tcase4" time="1" classname="Acceptance" status="">
+    </testcase>
+  </testsuite>
+  <testsuite name="Acceptance" tests="1" failures="0" errors="0" time="24" skipped="0" hostname="example.machine" id="0-0-0-2" timestamp="2011-10-17T23:05:06">
+    <testcase name="tcase5" time="1" classname="Acceptance" status="">
+    </testcase>
+  </testsuite>
+</testsuites>
