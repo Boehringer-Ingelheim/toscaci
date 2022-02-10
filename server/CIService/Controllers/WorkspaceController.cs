@@ -112,8 +112,21 @@ namespace CIService.Controllers
             {
                 return CreateErrorResponseMessage("Can not be deleted because running executions", HttpStatusCode.Conflict);
             }
-            try { 
-                WorkspaceService.DeleteWorkspace(workspaceID);
+            try {
+                List<ExecutionTracking> executions = ExecutionTrackerService.GetExecutionsByWorkspace(workspaceID);
+                foreach (ExecutionTracking execution in executions)
+                {
+                    if (!execution.request.PreserveWorkspaces)
+                    {
+                        log.InfoFormat("Deleting workspace directory {0}", execution.workspaceDirectory);
+                        //WorkspaceService.DeleteWorkspace(workspaceID);
+                    }
+                    else
+                    {
+                        log.InfoFormat("Preserving workspace directory {0}", execution.workspaceDirectory);
+                    }
+                }
+
                 ExecutionTrackerService.CleanExecutionsByWorkspace(workspaceID);
                 return new HttpResponseMessage()
                 {
