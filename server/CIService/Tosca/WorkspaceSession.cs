@@ -73,8 +73,10 @@ namespace CIService.Tosca
             if (TCAPIService.GetTCAPI().IsWorkspaceOpen)
             {
                 if (!workspace.IsSingleUser)
+                {
                     log.DebugFormat("CheckInAll  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.CheckInAll("Auto Push");
+                }
                 TCAPIService.GetTCAPI().CloseWorkspace();
             }
         }
