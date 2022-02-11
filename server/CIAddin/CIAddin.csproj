@@ -32,6 +32,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AutoMapper">
@@ -126,28 +127,11 @@
     <Compile Include="TCProjectTaskInterceptor.cs" />
   </ItemGroup>
   <ItemGroup />
-    <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
-    <WriteLinesToFile
-        File="$(VersionFileName)"
-        Overwrite="True"
-        Lines="
-using System.Reflection%3b
-using System.Runtime.InteropServices%3b
-using Tricentis.TCCore.Persistency.AddInManager%3b
-
-[assembly: AssemblyTitle(&quot;CITosacaAddon&quot;)]
-[assembly: AssemblyDescription(&quot;Github Continuous Integration Service Addon&quot;)]
-[assembly: AssemblyCompany(&quot;Github&quot;)]
-[assembly: AssemblyProduct(&quot;ToscaCIService&quot;)]
-[assembly: ComVisible(false)]
-[assembly: AssemblyCopyright(&quot;Copyright ©  2021&quot;)]
-[assembly: TCAddIn.TCAddInTypeAttribute(typeof(CIAddin.ToscaCommanderCIAddin))]
-[assembly: System.Reflection.AssemblyVersion(&quot;$(Version)&quot;)]
-[assembly: System.Reflection.AssemblyFileVersion(&quot;$(Version)&quot;)]
-[assembly: System.Reflection.AssemblyInformationalVersion(&quot;$(InformationalVersion)&quot;)]" />
+  <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
+    <WriteLinesToFile File="$(VersionFileName)" Overwrite="True" Lines="&#xA;using System.Reflection%3b&#xA;using System.Runtime.InteropServices%3b&#xA;using Tricentis.TCCore.Persistency.AddInManager%3b&#xA;&#xA;[assembly: AssemblyTitle(&quot;CITosacaAddon&quot;)]&#xA;[assembly: AssemblyDescription(&quot;Github Continuous Integration Service Addon&quot;)]&#xA;[assembly: AssemblyCompany(&quot;Github&quot;)]&#xA;[assembly: AssemblyProduct(&quot;ToscaCIService&quot;)]&#xA;[assembly: ComVisible(false)]&#xA;[assembly: AssemblyCopyright(&quot;Copyright ©  2021&quot;)]&#xA;[assembly: TCAddIn.TCAddInTypeAttribute(typeof(CIAddin.ToscaCommanderCIAddin))]&#xA;[assembly: System.Reflection.AssemblyVersion(&quot;$(Version)&quot;)]&#xA;[assembly: System.Reflection.AssemblyFileVersion(&quot;$(Version)&quot;)]&#xA;[assembly: System.Reflection.AssemblyInformationalVersion(&quot;$(InformationalVersion)&quot;)]" />
     <ItemGroup>
-        <Compile Include="$(VersionFileName)" />
+      <Compile Include="$(VersionFileName)" />
     </ItemGroup>
-</Target>
+  </Target>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
