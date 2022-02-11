@@ -237,7 +237,7 @@ jobs:
         shell: cmd
         run: |
            nuget restore
-           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
+           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /p:Platform=x64 /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
       - name: Package Tosca Commander Addon
         working-directory: server
         run: |
