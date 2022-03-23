@@ -33,6 +33,28 @@ namespace CIService.Tosca
             InitializeWorkspace(execution.sessionID, execution.WorkspaceUsername, execution.WorkspacePassword);
         }
 
+        /*
+        public WorkspaceSession(string path, int a)
+        {
+            try
+            {
+                workspacePath = path;
+                workspace = TCAPIService.GetTCAPI().OpenWorkspace(workspacePath, "Admin", "");
+                if (!workspace.IsSingleUser)
+                {
+                    log.DebugFormat("Update All  Project {0}", workspace.GetProject().DisplayedName);
+                    workspace.UpdateAll();
+                    workspace.GetProject().CheckoutTree();
+                }
+            }
+            catch (Exception ex)
+            {
+                Dispose();
+                throw ex;
+            }
+        }
+        */
+
         private void InitializeWorkspace(string sessionID, String userName, String password)
         {
             workspaceSessionID = sessionID;
@@ -73,8 +95,10 @@ namespace CIService.Tosca
             if (TCAPIService.GetTCAPI().IsWorkspaceOpen)
             {
                 if (!workspace.IsSingleUser)
+                {
                     log.DebugFormat("CheckInAll  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.CheckInAll("Auto Push");
+                }
                 TCAPIService.GetTCAPI().CloseWorkspace();
             }
         }

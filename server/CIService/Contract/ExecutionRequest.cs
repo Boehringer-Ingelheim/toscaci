@@ -23,5 +23,11 @@ namespace CIService.Contract
 
         [JsonProperty("videoRecord")]
         public bool VideoRecord { get; set; }
+
+        [JsonProperty("unattendedMode")]
+        public bool UnattendedMode { get; set; }
+
+        [JsonProperty("preserveWorkspaces")]
+        public bool PreserveWorkspaces { get; set; }
     }
 }

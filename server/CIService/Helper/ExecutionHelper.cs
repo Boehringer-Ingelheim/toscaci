@@ -95,6 +95,14 @@ namespace CIService.Helper
                         executionList.WriteAutomationObjects(testSuiteExecution.aOFilePath);
                     }
 
+                    // if (executionTracking.request.UnattendedMode)
+                    // {
+                    //     log.Info("[Execution] Switching to console mode");
+                    //     String batPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "unattended.bat");
+                    //     Process unattendedProcess = ExecuteProcess(batPath, executionTracking.artifactPath, []);
+                    //     unattendedProcess.WaitForExit();
+                    // }
+
                     if (executionTracking.request.VideoRecord)
                     {
                         log.Info("[Execution] Starting Video Record");
@@ -133,21 +141,20 @@ namespace CIService.Helper
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.ImportingResults);
                         ImportResults(session, testSuiteExecution.aOResultFilePath);
                         session.Save();
-                    }
 
-                    ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.GeneratingReports);
-                    if (executionTracking.cancel)
-                    {
-                        ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
-                        return;
-                    }
-                    using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
-                    {
+                        ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.GeneratingReports);
+                        if (executionTracking.cancel)
+                        {
+                            ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
+                            return;
+                        }
+
                         foreach (String reportName in executionTracking.request.Reports)
-                        {                            
+                        {
                             PrintReports(session, executionListId, reportName, executionTracking.reportPath);
                         }                        
                     }
+
                     if (executionTracking.cancel)
                     {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
@@ -214,11 +221,12 @@ namespace CIService.Helper
 
         private static void ImportResults(WorkspaceSession session, string AOResultFile)
         {
-            log.InfoFormat("[Execution] Importing Test Results");
-            TCTaskParams tcTaskParams = new TCTaskParams();
-                tcTaskParams.AddParam("AOResultFilePath", AOResultFile);
-                session.GetWorkspace().GetProject().ExecuteTask("CIAddin.Tasks.ImportAutomationObjectResultsToExecutionLogTask", tcTaskParams);                          
-                //session.GetWorkspace().GetProject().ImportAOResults(AOResultFile);
+            log.InfoFormat("[Execution] Importing Test Results");            
+            //TCTaskParams tcTaskParams = new TCTaskParams();
+            //tcTaskParams.AddParam("AOResultFilePath", AOResultFile);
+            //session.GetWorkspace().GetProject().ExecuteTask("CIAddin.Tasks.ImportAutomationObjectResultsToExecutionLogTask", tcTaskParams);
+            session.GetWorkspace().GetProject().ImportAutomationObjectResultsToExecutionLog(AOResultFile);  // Since Tosca 14.2+
+            //session.GetWorkspace().GetProject().ImportAOResults(AOResultFile);
         }
         private static Process ExecuteProcess(String fileName,String workingDir,String arguments)
         {

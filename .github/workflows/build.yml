@@ -85,12 +85,12 @@ jobs:
         run: |                   
           netsh advfirewall set allprofiles state off   
           if(![System.IO.Directory]::Exists("tosca-installer")){
-              Invoke-WebRequest "${{ secrets.TRICENTIS_14_3_STS_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
+              Invoke-WebRequest "${{ secrets.TRICENTIS_15_0_LTS_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
               expand-archive .\tosca-installer.zip              
               Remove-Item tosca-installer.zip
           }           
           echo "Installing Tosca..."
-          Start-Process '.\tosca-installer\Tricentis Tosca 14.3.0 STS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
+          Start-Process '.\tosca-installer\Tricentis Tosca 15.0.0 LTS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
 
           echo "Install License"
           Start-Process "$Env:TRICENTIS_LICENSING_HOME\ToscaLicenseConfiguration.exe" -Wait -NoNewWindow -ArgumentList 'connect-cloud -u ${{secrets.TRICENTIS_LICENSE_USER}} -p ${{secrets.TRICENTIS_LICENSE_PASSWORD}}'
@@ -214,7 +214,7 @@ jobs:
       - uses: actions/github-script@v4
         id: cache-key
         env:
-          KEY: ${{ secrets.TRICENTIS_14_3_STS_URL }}
+          KEY: ${{ secrets.TRICENTIS_15_0_LTS_URL }}
         with:
           script: |
               const { KEY } = process.env
@@ -227,17 +227,17 @@ jobs:
       - name: Setup Tosca
         run: |                      
            if(![System.IO.Directory]::Exists("tosca-installer")){
-              Invoke-WebRequest "${{ secrets.TRICENTIS_14_3_STS_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
+              Invoke-WebRequest "${{ secrets.TRICENTIS_15_0_LTS_URL }}" -UseBasicParsing -OutFile tosca-installer.zip
               expand-archive .\tosca-installer.zip              
               Remove-Item tosca-installer.zip
            }           
-           Start-Process '.\tosca-installer\Tricentis Tosca 14.3.0 STS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
+           Start-Process '.\tosca-installer\Tricentis Tosca 15.0.0 LTS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
       - name: Build
         working-directory: server
         shell: cmd
         run: |
            nuget restore
-           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
+           "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\MSBuild.exe" ToscaCI.sln /P:Configuration=Release /p:Platform=x64 /property:version=${{ needs.precheck.outputs.version_number }} /property:InformationalVersion=${{ needs.precheck.outputs.full_version }} /t:Build
       - name: Package Tosca Commander Addon
         working-directory: server
         run: |

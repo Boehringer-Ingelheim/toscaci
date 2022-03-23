@@ -33,13 +33,14 @@
     <WarningLevel>2</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <Target Name="GenerateVersionFile" BeforeTargets="BeforeBuild">
     <WriteLinesToFile File="$(VersionFileName)" Overwrite="True" Lines="&#xD;&#xA;using System.Reflection%3b&#xD;&#xA;using System.Runtime.InteropServices%3b&#xD;&#xA;[assembly: AssemblyTitle(&quot;CIService&quot;)]&#xD;&#xA;[assembly: AssemblyDescription(&quot;Tricentis Tosca Continuous Integration Service&quot;)]&#xD;&#xA;[assembly: AssemblyCompany(&quot;Github&quot;)]&#xD;&#xA;[assembly: AssemblyProduct(&quot;ToscaCIService&quot;)]&#xD;&#xA;[assembly: ComVisible(false)]&#xD;&#xA;[assembly: AssemblyCopyright(&quot;Copyright ©  2021&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyVersion(&quot;$(Version)&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyFileVersion(&quot;$(Version)&quot;)]&#xD;&#xA;[assembly: System.Reflection.AssemblyInformationalVersion(&quot;$(InformationalVersion)&quot;)]" />
