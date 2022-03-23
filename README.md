@@ -1,7 +1,7 @@
 # toscaci
 Tosca CLI tool and a rest API service that improve the interaction between CI Tools and Tosca in a clean and scalable way.
 
-[![Build](https://github.com/segator/toscaci/actions/workflows/build.yml/badge.svg)](https://github.com/segator/toscaci/actions/workflows/build.yml)
+[![Build](https://github.com/Boehringer-Ingelheim/toscaci/actions/workflows/build.yml/badge.svg)](https://github.com/Boehringer-Ingelheim/toscaci/actions/workflows/build.yml)
 
 ## Table of content
 - [History](#History)
@@ -39,7 +39,7 @@ This project has been conceived to fix all this issues and make the integration 
 - [x] Get all the artifacts generated on the test process   
 
 ## Requirements
-- Tosca Commander 13.1 installed
+- Tosca Commander 15.0 installed
 
 ## Architecture
 This product is based in three components:
