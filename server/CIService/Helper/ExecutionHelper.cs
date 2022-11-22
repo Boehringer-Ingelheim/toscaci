@@ -42,13 +42,12 @@ namespace CIService.Helper
 
         public static void TriggerExecution(ExecutionTracking executionTracking, List<String> executionListIDs)
         {
-            executionTracking.thread = new Thread(() => { RunExecution(executionTracking, executionListIDs); });
             log.DebugFormat("Test Execution Thread started", executionTracking.id);
-            executionTracking.thread.Start();
+            RunExecution(executionTracking, executionListIDs);
         }
 
         public static void RunExecution(ExecutionTracking executionTracking, List<String> executionListIDs)
-        {            
+        {
             try
             {
                 var workspacePath = Encoding.UTF8.GetString(Convert.FromBase64String(executionTracking.request.sessionID));
@@ -70,7 +69,7 @@ namespace CIService.Helper
             CreateDirectoryIfNotExists(executionTracking.reportPath);
 
             foreach (String executionListId in executionListIDs)
-            {                
+            {
                 if (executionTracking.cancel)
                 {
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Canceled);
@@ -78,17 +77,18 @@ namespace CIService.Helper
                 }
                 TestSuiteExecution testSuiteExecution = new TestSuiteExecution();
                 executionTracking.AddExecution(testSuiteExecution);
-                try {
-                    using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
-                    {                       
-                        ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;                        
+                try
+                { using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
+                    {
+                        ExecutionList executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;
                         testSuiteExecution.executionPath = Path.Combine(executionTracking.executionDirectory, executionList.UniqueId);
                         testSuiteExecution.executionListName = executionList.DisplayedName;
-                        testSuiteExecution.aOFilePath = Path.Combine(testSuiteExecution.executionPath, testSuiteExecution.executionListName + ".tas");                        
-                        Directory.CreateDirectory(testSuiteExecution.executionPath);                        
+                        testSuiteExecution.executionListNameWithoutSpaces = executionList.DisplayedName.Replace(" ","");
+                        testSuiteExecution.aOFilePath = Path.Combine(testSuiteExecution.executionPath, testSuiteExecution.executionListNameWithoutSpaces + ".tas");
+                        Directory.CreateDirectory(testSuiteExecution.executionPath);
                         testSuiteExecution.aOResultFilePath = Path.Combine(testSuiteExecution.executionPath, "result_" + Path.GetFileName(testSuiteExecution.aOFilePath));
                         log.Info("[Execution] Setting Test Config Parameters");
-                        OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath,executionList,  executionTracking.artifactPath, executionTracking.request.TestParameters);
+                        OverrideTcpsWithTestParameters(testSuiteExecution.aOFilePath,executionList, executionTracking.artifactPath, executionTracking.request.TestParameters);
                         session.Save();
                         //executionList.WriteAutomationObjects(testSuiteExecution.executionPath, "false", "false");
                         log.InfoFormat("[Execution] Generatting Automation Object file {0}", testSuiteExecution.aOFilePath);
@@ -107,12 +107,12 @@ namespace CIService.Helper
                     {
                         log.Info("[Execution] Starting Video Record");
                         String ffmpegPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "ffmpeg.exe");
-                        String ffmpegArgs = ConfigurationManager.AppSettings["ffmpegArgs"];                        
-                        testSuiteExecution.videoRecordProcess = ExecuteProcess(ffmpegPath, executionTracking.artifactPath, String.Format("{0} {1}",ffmpegArgs, "video_evidence.mp4"));
+                        String ffmpegArgs = ConfigurationManager.AppSettings["ffmpegArgs"];
+                        testSuiteExecution.videoRecordProcess = ExecuteProcess(ffmpegPath, executionTracking.artifactPath, String.Format("{0} {1}", ffmpegArgs, "video_evidence.mp4"));
                     }
 
                     // for tosca 14.0 -> SlimAgent, for older versions, use "Slim"
-                    testSuiteExecution.tboxProcess = ExecuteProcess(Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE), TBOX_HOME_DIRECTORY,String.Format(" 12342 SlimAgent {0}",testSuiteExecution.aOFilePath));
+                    testSuiteExecution.tboxProcess = ExecuteProcess(Path.Combine(TBOX_HOME_DIRECTORY, TBOX_AGENT_EXE), TBOX_HOME_DIRECTORY, String.Format(" 12342 SlimAgent {0}", testSuiteExecution.aOFilePath));
                     ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.Executing);
                     log.InfoFormat("[Execution] Waitting for Test Run to finish");
                     testSuiteExecution.tboxProcess.WaitForExit();
@@ -132,12 +132,16 @@ namespace CIService.Helper
                         throw new ApplicationException("TBOX Failed with exit code:" + testSuiteExecution.tboxProcess.ExitCode);
                     }
                     //Copy xunit file  generated with tbox to delivery folder, as the name is based on executionList display name, we need to randomize name to avoid file overwritting
-                    String xunitFileExecutionPath = Path.Combine(testSuiteExecution.executionPath, "junit_result_" + testSuiteExecution.executionListName + ".xml");
-                    String xunitFileResultPath = Path.Combine(executionTracking.xunitPath, "junit_result_" + testSuiteExecution.executionListName + new Random().Next()+ ".xml");
-                    File.Copy(xunitFileExecutionPath, xunitFileResultPath);
-                   
+                    String xunitFileExecutionPath = Path.Combine(testSuiteExecution.executionPath, "junit_result_" + testSuiteExecution.executionListNameWithoutSpaces + ".xml");
+                    String xunitFileResultPath = Path.Combine(executionTracking.xunitPath, "junit_result_" + testSuiteExecution.executionListNameWithoutSpaces + new Random().Next() + ".xml");
+                    
+                    if (File.Exists(xunitFileExecutionPath))
+                        File.Copy(xunitFileExecutionPath, xunitFileResultPath);
+                    else
+                        log.WarnFormat("File execution path doesn't exist. Path: {0}", xunitFileExecutionPath);
+
                     using (WorkspaceSession session = new WorkspaceSession(executionTracking.request))
-                    {                        
+                    {
                         ExecutionTrackerService.SetExecutionTrackingState(executionTracking.id, ExecutionStatus.ImportingResults);
                         ImportResults(session, testSuiteExecution.aOResultFilePath);
                         session.Save();
@@ -152,7 +156,7 @@ namespace CIService.Helper
                         foreach (String reportName in executionTracking.request.Reports)
                         {
                             PrintReports(session, executionListId, reportName, executionTracking.reportPath);
-                        }                        
+                        }
                     }
 
                     if (executionTracking.cancel)
@@ -169,33 +173,46 @@ namespace CIService.Helper
                 }
                 finally
                 {
-                    testSuiteExecution.Cancel();                    
+                    testSuiteExecution.Cancel();
                 }
-            }   
-        }
-
-        private static void PrintReports(WorkspaceSession session, string executionListId,string reportName,String reportPath)
-        {
-            log.InfoFormat("[Execution] Printing Report {0}",reportName);
-            var executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;            
-            executionList.PrintReport(reportName, Path.Combine(reportPath, executionList.DisplayedName + "_" + reportName + ".pdf"));                                    
-        }
-
-        public static void OverrideTcpsWithTestParameters(string AOFilePath,ExecutionList executionList,  String artifactPath, List<KeyValue> testParameters)
-        {
-            if (!testParameters.Select(p => p.key).Contains(ARTIFACTS_PATH_NAME))
-            {
-                KeyValue artifactKV = new KeyValue();
-                artifactKV.key = ARTIFACTS_PATH_NAME;
-                artifactKV.value = artifactPath;
-                testParameters.Add(artifactKV);
-                
             }
-            foreach(KeyValue kv in testParameters)
+        }
+
+        private static void PrintReports(WorkspaceSession session, string executionListId, string reportName, String reportPath)
+        {
+            log.InfoFormat("[Execution] Printing Report {0}", reportName);
+            try
             {
-                log.DebugFormat("[Execution] Setting Test Config Parameter {0}:{1}", kv.key, kv.value);
-                TestConfigurationHelper.SetTestConfigurationParameterValue(executionList, kv.key, kv.value);
-            }            
+                var executionList = session.GetWorkspace().GetTCObject(executionListId) as ExecutionList;
+                executionList?.PrintReport(reportName,
+                    Path.Combine(reportPath, executionList.DisplayedName + "_" + reportName + ".pdf"));
+            }
+            catch (Exception e)
+            {
+                log.Error(e.Message);
+                throw;
+            }
+        }
+
+        public static void OverrideTcpsWithTestParameters(string AOFilePath, ExecutionList executionList,
+            String artifactPath, List<KeyValue> testParameters)
+        {
+            if (testParameters != null)
+            {
+                if (!testParameters.Select(p => p.key).Contains(ARTIFACTS_PATH_NAME))
+                {
+                    KeyValue artifactKV = new KeyValue();
+                    artifactKV.key = ARTIFACTS_PATH_NAME;
+                    artifactKV.value = artifactPath;
+                    testParameters.Add(artifactKV);
+                }
+
+                foreach (KeyValue kv in testParameters)
+                {
+                    log.DebugFormat("[Execution] Setting Test Config Parameter {0}:{1}", kv.key, kv.value);
+                    TestConfigurationHelper.SetTestConfigurationParameterValue(executionList, kv.key, kv.value);
+                }
+            }
         }
 
         private static void CopyFilesRecursively(string sourcePath, string targetPath)
@@ -212,7 +229,7 @@ namespace CIService.Helper
                 File.Copy(newPath, newPath.Replace(sourcePath, targetPath), true);
             }
         }
-  
+
         public static void Empty(this DirectoryInfo directory)
         {
             foreach (System.IO.FileInfo file in directory.GetFiles()) file.Delete();
@@ -221,16 +238,16 @@ namespace CIService.Helper
 
         private static void ImportResults(WorkspaceSession session, string AOResultFile)
         {
-            log.InfoFormat("[Execution] Importing Test Results");            
+            log.InfoFormat("[Execution] Importing Test Results");
             //TCTaskParams tcTaskParams = new TCTaskParams();
             //tcTaskParams.AddParam("AOResultFilePath", AOResultFile);
             //session.GetWorkspace().GetProject().ExecuteTask("CIAddin.Tasks.ImportAutomationObjectResultsToExecutionLogTask", tcTaskParams);
-            session.GetWorkspace().GetProject().ImportAutomationObjectResultsToExecutionLog(AOResultFile);  // Since Tosca 14.2+
+            session.GetWorkspace().GetProject().ImportAutomationObjectResultsToExecutionLog(AOResultFile); // Since Tosca 14.2+
             //session.GetWorkspace().GetProject().ImportAOResults(AOResultFile);
         }
-        private static Process ExecuteProcess(String fileName,String workingDir,String arguments)
+        private static Process ExecuteProcess(String fileName, String workingDir, String arguments)
         {
-            log.DebugFormat("[Execution] Execute Process {0} {1} workDir: {2}",fileName,arguments,workingDir);
+            log.DebugFormat("[Execution] Execute Process {0} {1} workDir: {2}", fileName, arguments, workingDir);
             Process AgentProcess = new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -242,20 +259,13 @@ namespace CIService.Helper
                     RedirectStandardError = true,
                     RedirectStandardInput = true,
                     CreateNoWindow = false,
-                    WorkingDirectory = workingDir                    
+                    WorkingDirectory = workingDir
                 }
             };
 
 
-
-            AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) =>
-            {
-                Console.WriteLine(e.Data);
-            });
-            AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) =>
-            {
-                Console.WriteLine(e.Data);
-            });
+            AgentProcess.OutputDataReceived += new DataReceivedEventHandler((s, e) => { Console.WriteLine(e.Data); });
+            AgentProcess.ErrorDataReceived += new DataReceivedEventHandler((s, e) => { Console.WriteLine(e.Data); });
             AgentProcess.Start();
             AgentProcess.BeginOutputReadLine();
             AgentProcess.BeginErrorReadLine();
