@@ -10,7 +10,9 @@ namespace CIService.Contract
 {
     public class TestSuiteExecution
     {
-        public string executionListName { get; set; }
+        public string executionListName{ get; set; }
+
+        public string executionListNameWithoutSpaces { get; set; }
 
         public string executionPath { get; set; }
 

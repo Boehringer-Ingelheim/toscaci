@@ -31,7 +31,6 @@ namespace CIService.Controllers
             {
                 return CreateErrorResponseMessage(HttpStatusCode.NotFound, $"The execution \"{id}\" was not found on the machine!");
             }
-            executionTrack.Cancel();
             return new HttpResponseMessage()
             {
                 StatusCode = HttpStatusCode.OK                

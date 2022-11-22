@@ -65,11 +65,19 @@ namespace CIService.Controllers
                 foreach (MultipartFileData file in provider.FileData)
                 {
                     var cleanFileName = file.Headers.ContentDisposition.FileName.Replace("\"", "");
-                    if (cleanFileName == "") { continue; }
-                    if(!cleanFileName.EndsWith(".tsu") && !cleanFileName.EndsWith(".tpr")) {
-                        return CreateErrorResponseMessage("Only Subset(.tsu) or Project Definition(.tpr) import files are allowed.", HttpStatusCode.BadRequest);                            
+                    if (cleanFileName == "")
+                    {
+                        continue;
                     }
-                    var destPath = Path.Combine(Path.GetDirectoryName(file.LocalFileName), cleanFileName);                   
+
+                    if (!cleanFileName.EndsWith(".tsu") && !cleanFileName.EndsWith(".tpr"))
+                    {
+                        return CreateErrorResponseMessage(
+                            "Only Subset(.tsu) or Project Definition(.tpr) import files are allowed.",
+                            HttpStatusCode.BadRequest);
+                    }
+
+                    var destPath = Path.Combine(Path.GetDirectoryName(file.LocalFileName), cleanFileName);
                     if (cleanFileName.EndsWith(".tsu"))
                     {
                         subsetFiles.Add(destPath);
@@ -108,7 +116,7 @@ namespace CIService.Controllers
         {
             log.InfoFormat("Deleting workspace {0}", workspaceID);
             List<ExecutionTracking> runningExecution = ExecutionTrackerService.HaveExecutionRunning(workspaceID);
-            if (runningExecution.Count() > 0)
+            if (runningExecution != null && runningExecution.Any())
             {
                 return CreateErrorResponseMessage("Can not be deleted because running executions", HttpStatusCode.Conflict);
             }
