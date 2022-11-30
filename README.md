@@ -17,7 +17,6 @@ Tosca CLI tool and a rest API service that improve the interaction between CI To
 - Known Issues
   - [Usage Issues](#Usage-Issues)
 
-
 ## History
 If you have ever tried to integrate Tosca with a modern CI enterprise platform you will notice lot of limitations on how that can be done, for instance:
 - There is no easy way to create Projects via CPI or API.
