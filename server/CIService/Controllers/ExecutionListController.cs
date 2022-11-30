@@ -29,7 +29,7 @@ namespace CIService.Controllers
             {
                 log.InfoFormat("Request Test Execution on workspace session {0}", request.sessionID);
                 List<ExecutionTracking> runningExecutions = ExecutionTrackerService.HaveExecutionRunning();
-                if (runningExecutions.Count()>0)
+                if (runningExecutions != null && runningExecutions.Count()>0)
                 {
                     log.WarnFormat("Execution Request on workspace {0} can not be placed because an execution is already running ", request.sessionID);
                     return CreateErrorResponseMessage(HttpStatusCode.Conflict,$"Could not create a new execution since the following execution(s) are still running: {String.Join(",",runningExecutions.Select(x => x.status.ToString()))}");
@@ -40,7 +40,7 @@ namespace CIService.Controllers
                 {            
                     //Check Execution Lists exists and are not empty
                     var executionLists = session.SearchForExecutionList(request.ExecutionFilter);
-                    if (executionLists.Count() == 0)
+                    if (executionLists == null || !executionLists.Any())
                     {
                         log.WarnFormat("No execution Lists founds, criteria {0}", request.ExecutionFilter);
                         return CreateErrorResponseMessage(HttpStatusCode.BadRequest, "NO execution Lists found");
@@ -50,10 +50,10 @@ namespace CIService.Controllers
                         var resExecutionList = new ExecutionList();
                         resExecutionList.name = executionList.DisplayedName;
                         var executionEntries = executionList.Search($"=>SUBPARTS:ExecutionEntry");
-                        if (executionEntries.Count() == 0)
+                        if (executionEntries == null || !executionEntries.Any())
                         {
-                            log.WarnFormat("execution List {0}  no Test Cases found", executionList);
-                            return CreateErrorResponseMessage(HttpStatusCode.BadRequest, String.Format("Execution List {0} is empty", executionList.DisplayedName));
+                            log.WarnFormat("Execution List {0}  no Test Cases found", executionList);
+                            return CreateErrorResponseMessage(HttpStatusCode.BadRequest, string.Format("Execution List {0} is empty", executionList.DisplayedName));
                         }
                         resExecutionList.entries = executionEntries.Select(t => t.DisplayedName).ToList();
                         responseExecutionList.Add(resExecutionList);

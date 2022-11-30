@@ -62,7 +62,7 @@ namespace CIService.Tosca
             try
             {
                 workspace = TCAPIService.GetTCAPI().OpenWorkspace(workspacePath, userName, password);
-                if (!workspace.IsSingleUser)
+                if (workspace != null && !workspace.IsSingleUser)
                 {
                     log.DebugFormat("Update All  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.UpdateAll();
@@ -91,13 +91,14 @@ namespace CIService.Tosca
         }
 
         public void Dispose()
-        {            
+        {           
             if (TCAPIService.GetTCAPI().IsWorkspaceOpen)
             {
-                if (!workspace.IsSingleUser)
+                if (workspace != null && !workspace.IsSingleUser)
                 {
                     log.DebugFormat("CheckInAll  Project {0}", workspace.GetProject().DisplayedName);
                     workspace.CheckInAll("Auto Push");
+                    workspace = null;
                 }
                 TCAPIService.GetTCAPI().CloseWorkspace();
             }
