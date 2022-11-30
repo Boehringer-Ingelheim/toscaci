@@ -49,7 +49,6 @@ This product is based in three components:
 
 ![toscaci architecture](./architecture/architecture_toscaci.png)
 
-
 ## Getting started
 To be able to use this tool you first need to understand how to use the toscactl and configure the CIService:
 
