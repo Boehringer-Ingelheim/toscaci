@@ -93,7 +93,7 @@ jobs:
           Start-Process '.\tosca-installer\Tricentis Tosca 15.0.0 LTS.exe' -Wait -NoNewWindow -ArgumentList '/s START_SERVICES=1 ADDLOCAL=TricentisTBox MOBILE_TESTING=1   /qn'
 
           echo "Install License"
-          Start-Process "$Env:TRICENTIS_LICENSING_HOME\ToscaLicenseConfiguration.exe" -Wait -NoNewWindow -ArgumentList 'connect-cloud -i TRICENTIS_LICENSE_SERVER_ID -u ${{secrets.TRICENTIS_LICENSE_USER}} -p ${{secrets.TRICENTIS_LICENSE_PASSWORD}} -v'
+          Start-Process "$Env:TRICENTIS_LICENSING_HOME\ToscaLicenseConfiguration.exe" -Wait -NoNewWindow -ArgumentList 'connect-cloud -i ${{secrets.TRICENTIS_LICENSE_SERVER_ID}} -u ${{secrets.TRICENTIS_LICENSE_USER}} -p ${{secrets.TRICENTIS_LICENSE_PASSWORD}} -v'
           
           echo "Install Tosca Commander Addon"
           cp ".\toscacommander-addon\*"  "$Env:COMMANDER_HOME\"
